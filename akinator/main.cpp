@@ -2,47 +2,31 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "AVLTree.h"
+#include "tree.h"
 #include "read_file.h"
+#include "akinator.h"
+#include "color.h"
+
 
 int main()
 {
-    AVLTree *Root = nullptr;
+    system("clear");
 
-    char *file_content = NULL;
-    FileData file_data = {};
+        printf(WHTB"# Akinator     \n"
+           " (c) rAch, 2025\n\n" RESET
+            YELB "Выберите соотвествующий режим работы\n\n"
+            MAGB "Guessing game \n"
 
-    codeError error = readFile(&file_content, &file_data);
+           "Exit        \n\n" RESET);
 
-    if (error != NO_ERROR)
-    {
-        switch (error)
-        {
-            case NO_ERROR:
-                break;
-            case FAILED_OPEN_FILE: fprintf(stderr, "Failed open file\n");
-                break;
-            case MEMORY_ALLOCATION_ERROR: fprintf(stderr, "MEMORY_ALLOCATION_ERROR\n");
-                break;
-            case FILE_READ_ERROR: fprintf(stderr, "FILE_READ_ERROR\n");
-                break;
-            default:
-                fprintf(stderr, "Unknow error occurred\n");
-        }
-    }
+    BTree *Root = nullptr;
 
-    resultOfReadFile(&file_data);
+    CreateNode(&Root, "Is it a living thing?");
+    CreateNode(&Root->left, "Is it a human?");
+    CreateNode(&Root->right, "Is it a car?");
 
-    TreeErrors err = InsertLinesIntoTree(&Root, &file_data);
-    if (err != OK)
-    {
-        fprintf(stderr, "Ошибка при вставке строк в AVL-дерево\n");
-    }
-
+    Akinator(Root);
     TreeDumpDot(Root);
-
     FreeTree(&Root);
-    free(file_content);
-    free(file_data.lines);
 }
 

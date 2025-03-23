@@ -1,7 +1,7 @@
 #include "read_file.h"
-#include "AVLTree.h"
+#include "tree.h"
 
-TreeErrors InsertLinesIntoTree(AVLTree **Root, FileData *file_data)
+TreeErrors InsertLinesIntoTree(BTree **Root, FileData *file_data)
 {
     if (file_data == nullptr || file_data->lines == nullptr) return NODE_NULLPTR;
 

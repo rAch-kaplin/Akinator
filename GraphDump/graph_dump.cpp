@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "AVLTree.h"
+#include "tree.h"
 
-TreeErrors TreeDumpDot(AVLTree* Root)
+TreeErrors TreeDumpDot(BTree* Root)
 {
     static int dump_counter = 0;
     const size_t PNG_NAME_SIZE = 30;
@@ -49,7 +49,7 @@ TreeErrors TreeDumpDot(AVLTree* Root)
     return OK;
 }
 
-int GenerateGraph(AVLTree *Node, char* buffer, int* buffer_len, const size_t BUFFER_SIZE)
+int GenerateGraph(BTree *Node, char* buffer, int* buffer_len, const size_t BUFFER_SIZE)
 {
     if (!Node) return 0;
 
@@ -57,14 +57,13 @@ int GenerateGraph(AVLTree *Node, char* buffer, int* buffer_len, const size_t BUF
                             "\tnode%p [shape=plaintext; style=filled; color=\"#fcf0d2\"; label = <\n"
                             "\t\t         <table BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"6\" BGCOLOR=\"#bfb58f\" COLOR=\"#4d3d03\">\n"
                             "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3a3a3a'><b>Node: %p</b></FONT></td></tr>\n"
-                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#ba6504'>Value: <b>"FORMAT_STR"</b></FONT></td></tr>\n"
-                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#4d3d03'>Height: <b>%03d</b></FONT></td></tr>\n"
+                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#ba6504'>Data: <b>"FORMAT_ELEM"</b></FONT></td></tr>\n"
                             "\t\t\t           <tr>\n"
                             "\t\t\t               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: %p</b></FONT></td>\n"
                             "\t\t\t               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#8b0000'><b>Right: %p</b></FONT></td>\n"
                             "\t\t\t           </tr>\n"
                             "\t\t         </table> >];\n",
-                            Node, Node, Node->value, Node->height, Node->left, Node->right);
+                            Node, Node, Node->data, Node->left, Node->right);
 
     if (Node->left)
     {
