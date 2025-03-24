@@ -18,28 +18,43 @@ typedef struct BTree
     struct BTree *right;
 } BTree;
 
-enum TreeErrors
+// enum TreeErrors
+// {
+//     OK                  = 0x000000,
+//     ALLOC_ERR           = 0x000001,
+//     NODE_NULLPTR        = 0x000002,
+//     REPEAT_ELEM         = 0x000004,
+//     FILE_NOT_OPEN       = 0x000008,
+// };
+
+enum CodeError
 {
-    OK                  = 0x000000,
-    ALLOC_ERR           = 0x000001,
-    NODE_NULLPTR        = 0x000002,
-    REPEAT_ELEM         = 0x000004,
-    FILE_NOT_OPEN       = 0x000008,
+    OK                      = 0x0000,
+    ALLOC_ERR               = 0x0001,
+    NODE_NULLPTR            = 0x0002,
+    REPEAT_ELEM             = 0x0004,
+    FILE_NOT_OPEN           = 0x0008,
+    INVALID_ARGUMENT        = 0x0010,
+    UNEXPECTED_END_OF_INPUT = 0x0020,
+    INVALID_FORMAT          = 0x0040,
+    EMPTY_VALUE             = 0x0080,
+    BUFFER_OVERFLOW         = 0x0100,  
 };
 
-TreeErrors InsertLinesIntoTree(BTree **Root, FileData *file_data);
 
-TreeErrors CreateNode(BTree **Node, elem_t value);
-TreeErrors FreeTree(BTree **Node);
-TreeErrors InsertNode(BTree **Root, elem_t value);
+CodeError InsertLinesIntoTree(BTree **Root, FileData *file_data);
+
+CodeError CreateNode(BTree **Node, elem_t value);
+CodeError FreeTree(BTree **Node);
+CodeError InsertNode(BTree **Root, elem_t value);
 BTree* NodeFind(BTree *Root, elem_t value);
 BTree* NodeFind2(BTree *Root, elem_t value);
-TreeErrors TreeTraversal(BTree *Node);
-TreeErrors InsertNodeLoop(BTree **Root, elem_t value);
-TreeErrors InsertNodeLoop2(BTree **Root, elem_t value);
-TreeErrors DeleteNode(BTree **Root, elem_t value);
+CodeError TreeTraversal(BTree *Node);
+CodeError InsertNodeLoop(BTree **Root, elem_t value);
+CodeError InsertNodeLoop2(BTree **Root, elem_t value);
+CodeError DeleteNode(BTree **Root, elem_t value);
 
-TreeErrors TreeDumpDot(BTree* Root);
+CodeError TreeDumpDot(BTree* Root);
 int GenerateGraph(BTree *Node, char* buffer, int* buffer_len, const size_t BUFFER_SIZE);
 
 #endif // _HTREE

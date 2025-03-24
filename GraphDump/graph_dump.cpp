@@ -4,7 +4,7 @@
 
 #include "tree.h"
 
-TreeErrors TreeDumpDot(BTree* Root)
+CodeError TreeDumpDot(BTree* Root)
 {
     static int dump_counter = 0;
     const size_t PNG_NAME_SIZE = 30;

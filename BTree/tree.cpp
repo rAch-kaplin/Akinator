@@ -3,7 +3,7 @@
 #include <assert.h>
 #include "tree.h"
 
-TreeErrors CreateNode(BTree** Node, elem_t data)
+CodeError CreateNode(BTree** Node, elem_t data)
 {
     *Node = (BTree*)calloc(1, sizeof(BTree));
     if (*Node == nullptr)
@@ -24,7 +24,7 @@ TreeErrors CreateNode(BTree** Node, elem_t data)
     return OK;
 }
 
-TreeErrors FreeTree(BTree** Node)
+CodeError FreeTree(BTree** Node)
 {
     if (*Node == nullptr) return OK;
 
@@ -38,7 +38,7 @@ TreeErrors FreeTree(BTree** Node)
     return OK;
 }
 
-TreeErrors InsertNode(BTree** Root, elem_t data)
+CodeError InsertNode(BTree** Root, elem_t data)
 {
     if (*Root == nullptr)
     {
@@ -63,7 +63,7 @@ TreeErrors InsertNode(BTree** Root, elem_t data)
     return OK;
 }
 
-TreeErrors InsertNodeLoop(BTree **Root, elem_t data)
+CodeError InsertNodeLoop(BTree **Root, elem_t data)
 {
     if (*Root == nullptr)
     {
@@ -100,7 +100,7 @@ TreeErrors InsertNodeLoop(BTree **Root, elem_t data)
     return OK;
 }
 
-TreeErrors InsertNodeLoop2(BTree **Root, elem_t data)
+CodeError InsertNodeLoop2(BTree **Root, elem_t data)
 {
     if (! *Root)
     {
@@ -141,7 +141,7 @@ BTree* NodeFind(BTree* Root, elem_t data)
     else          return NodeFind(Root->right, data);
 }
 
-TreeErrors TreeTraversal(BTree *Node)
+CodeError TreeTraversal(BTree *Node)
 {
     if (Node == nullptr)
     {
@@ -155,7 +155,7 @@ TreeErrors TreeTraversal(BTree *Node)
     return OK;
 }
 
-TreeErrors DeleteNode(BTree** Root, elem_t data)
+CodeError DeleteNode(BTree** Root, elem_t data)
 {
     if (*Root == nullptr) return NODE_NULLPTR;
 

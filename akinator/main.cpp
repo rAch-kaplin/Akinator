@@ -6,27 +6,84 @@
 #include "read_file.h"
 #include "akinator.h"
 #include "color.h"
+#include "logger.h"
 
-
-int main()
+void ProcessingModeGame(BTree **Node, const char *name_base);
+void MenuGuessing(BTree **Node, const char *name_base);
+void MenuGuessing(BTree **Node, const char *name_base)
 {
     system("clear");
 
         printf(WHTB"# Akinator     \n"
            " (c) rAch, 2025\n\n" RESET
             YELB "Выберите соотвествующий режим работы\n\n"
-            MAGB "Guessing game \n"
+            MAGB "[g]: Guessing game \n"
 
-           "Exit        \n\n" RESET);
+           "[q]: Exit        \n\n" RESET);
+
+    ProcessingModeGame(Node, name_base);
+}
+
+int GetMode()
+{
+    system("stty raw -echo");
+    int c = getchar();
+    system("stty sane");
+    return c;
+}
+
+CodeError CreateTree(BTree **Node, const char *name_base)
+{
+    size_t file_size = 0;
+    char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
+    char *pars_buffer = base_buffer;
+    CodeError err = ParseTree(Node, &pars_buffer);
+    if (err != OK)
+    {
+        LOG(LOGL_ERROR, "ParsTree error: %d", err);
+        free(base_buffer);
+        return err;
+    }
+    free(base_buffer);
+    TreeDumpDot(*Node);
+    return OK;
+}
+
+void ProcessingModeGame(BTree **Node, const char *name_base)
+{
+    int mode_game = GetMode();
+
+    switch (mode_game)
+    {
+        case key_guessing:
+        {
+            CreateTree(Node, name_base);
+            Akinator(Node, name_base);
+            break;
+        }
+        case key_exit:
+        {
+            return;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+int main()
+{
+    LoggerInit(LOGL_DEBUG, "logger/logfile.log", DEFAULT_MODE);
 
     BTree *Root = nullptr;
+    const char *name_base = "akinator/base.txt";
 
-    CreateNode(&Root, "Is it a living thing?");
-    CreateNode(&Root->left, "Is it a human?");
-    CreateNode(&Root->right, "Is it a car?");
-
-    Akinator(Root);
-    TreeDumpDot(Root);
+    MenuGuessing(&Root, name_base);
+    // TreeDumpDot(Root);
     FreeTree(&Root);
+
+    LoggerDeinit();
+    printf(GREEN "End main\n" RESET);
 }
 
