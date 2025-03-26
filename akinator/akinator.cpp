@@ -1,26 +1,109 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <color.h>
 
 #include "tree.h"
 #include "akinator.h"
 #include "logger.h"
+
 
 const size_t SIZE_QUESTION = 100;
 
 bool CheckYesAnswer(char *answer);
 bool CheckNoAnswer(char *answer);
 
+void ProcessingModeGame(BTree **Node, const char *name_base);
 
-void Akinator(BTree **Node, const char *name_base)
+void MenuGuessing(BTree **Node, const char *name_base)
+{
+    system("clear");
+
+        printf(WHTB"# Akinator     \n"
+           " (c) rAch, 2025\n\n" RESET
+            YELB "Выберите соотвествующий режим работы\n\n"
+            MAGB "[g]: Guessing game \n"
+
+           "[q]: Exit        \n\n" RESET);
+
+    ProcessingModeGame(Node, name_base);
+}
+
+int GetMode()
+{
+    system("stty raw -echo");
+    int c = getchar();
+    system("stty sane");
+    return c;
+}
+
+CodeError CreateTree(BTree **Node, const char *name_base)
+{
+    assert(Node != nullptr);
+    //BTree *Root = *Node;
+
+    size_t file_size = 0;
+    char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
+    char *pars_buffer = base_buffer;
+    CodeError err = ParseTree(Node, &pars_buffer);
+    if (err != OK)
+    {
+        LOG(LOGL_ERROR, "ParsTree error: %d", err);
+        free(base_buffer);
+        return err;
+    }
+    free(base_buffer);
+    TreeDumpDot(*Node);
+    return OK;
+}
+
+void ProcessingModeGame(BTree **Node, const char *name_base)
+{
+    int mode_game = GetMode();
+
+    switch (mode_game)
+    {
+        case key_guessing:
+        {
+            CreateTree(Node, name_base);
+            Akinator(Node, name_base);
+            break;
+        }
+        case key_exit:
+        {
+            return;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+CodeError Akinator(BTree **Node, const char *name_base)
 {
     assert(Node != nullptr);
 
     char *answer = (char*)calloc(SIZE_QUESTION, sizeof(char));
-    assert(answer); //FIXME - if
+    if (answer == nullptr)
+    {
+        LOG(LOGL_ERROR, "ALLOC_FAILD");
+        return ALLOC_ERR;
+    }
 
-    printf("It's %s? (yes/no): ", (*Node)->data);
+    printf(CYAN "It's %s? (yes/no/q - quit/r - restart): " RESET, (*Node)->data);
     scanf("%99s", answer);
+
+    if (strcmp(answer, "q") == 0)
+    {
+        free(answer);
+        return OK;
+    }
+    else if (strcmp(answer, "r") == 0)
+    {
+        free(answer);
+        return OK;
+    }
 
     if (CheckYesAnswer(answer) && (*Node)->left)
     {
@@ -36,26 +119,27 @@ void Akinator(BTree **Node, const char *name_base)
     {
         if (CheckYesAnswer(answer))
         {
-            printf("I FIND THE ELEMENT\n");
+            printf(GREEN "I FIND THE ELEMENT\n" RESET);
             free(answer);
-            return;
+            return OK;
         }
         else if (CheckNoAnswer(answer))
         {
-            printf("I DO NOT FIND, LETS WRITE IT\n");
+            printf(MAGENTA "I DO NOT FIND, LETS WRITE IT\n" RESET);
             free(answer);
-            return;
+            return OK;
         }
         else
         {
-            printf("INCORRECT INPUT, PLEASE, TRY AGAIN\n");
+            printf(RED "INCORRECT INPUT, PLEASE, TRY AGAIN\n" RESET);
             free(answer);
             Akinator(Node, name_base);
-            return;
+            return INVALID_FORMAT;
         }
     }
 
     free(answer);
+    return OK;
 }
 
 bool CheckYesAnswer(char *answer)
