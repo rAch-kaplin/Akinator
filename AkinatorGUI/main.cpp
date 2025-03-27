@@ -27,4 +27,3 @@ int main()
     LoggerDeinit();
     printf(GREEN "End main\n" RESET);
 }
-

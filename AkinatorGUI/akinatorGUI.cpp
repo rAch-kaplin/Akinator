@@ -22,6 +22,7 @@ void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node);
 void AkinatorInit(BTree **Node, const char *name_base)
 {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Akinator");
+    window.setPosition(sf::Vector2i(600, 50));
 
     sf::Font font;
     if (!font.loadFromFile("font.ttf"))
@@ -40,6 +41,7 @@ void AkinatorInit(BTree **Node, const char *name_base)
     menuText.setCharacterSize(24);
     menuText.setFillColor(sf::Color::Red);
     menuText.setStyle(sf::Text::Bold);
+    menuText.setPosition(200, 50);
 
     while (window.isOpen())
     {
@@ -73,26 +75,46 @@ void AkinatorInit(BTree **Node, const char *name_base)
 
 void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
 {
+    assert(Node != nullptr);
+
     sf::Text questionText;
     questionText.setFont(font);
-    questionText.setString("Is it " + std::string((*Node)->data) + "?");
+    questionText.setString("It's " + std::string((*Node)->data) + "?");
     questionText.setCharacterSize(30);
     questionText.setFillColor(sf::Color::Black);
-    questionText.setPosition(50, 50);
+    questionText.setPosition(200, 50);
 
-    sf::Text promptText;
-    promptText.setFont(font);
-    promptText.setString("(Y - Yes, N - No, Q - Quit)");
-    promptText.setCharacterSize(20);
-    promptText.setFillColor(sf::Color::Black);
-    promptText.setPosition(50, 100);
+    sf::RectangleShape yesButton(sf::Vector2f(150, 50));
+    yesButton.setFillColor(sf::Color::Green);
+    yesButton.setPosition(200, 150);
+
+    sf::Text yesText;
+    yesText.setFont(font);
+    yesText.setString("Yes");
+    yesText.setCharacterSize(24);
+    yesText.setFillColor(sf::Color::White);
+    yesText.setPosition(230, 160);
+
+    sf::RectangleShape noButton(sf::Vector2f(150, 50));
+    noButton.setFillColor(sf::Color::Red);
+    noButton.setPosition(400, 150);
+
+    sf::Text noText;
+    noText.setFont(font);
+    noText.setString("No");
+    noText.setCharacterSize(24);
+    noText.setFillColor(sf::Color::White);
+    noText.setPosition(460, 160);
 
     bool answered = false;
     while (window.isOpen() && !answered)
     {
         window.clear(sf::Color::White);
         window.draw(questionText);
-        window.draw(promptText);
+        window.draw(yesButton);
+        window.draw(yesText);
+        window.draw(noButton);
+        window.draw(noText);
         window.display();
 
         sf::Event event;
@@ -104,9 +126,11 @@ void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
                 return;
             }
 
-            if (event.type == sf::Event::KeyPressed)
+            if (event.type == sf::Event::MouseButtonPressed)
             {
-                if (event.key.code == sf::Keyboard::Y)
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+                if (yesButton.getGlobalBounds().contains((float)mousePos.x, (float)mousePos.y))
                 {
                     if ((*Node)->left)
                     {
@@ -116,19 +140,19 @@ void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
                     {
                         sf::Text resultText;
                         resultText.setFont(font);
-                        resultText.setString("I guessed it! It's " + std::string((*Node)->data));
+                        resultText.setString("I guessed right! It's " + std::string((*Node)->data));
                         resultText.setCharacterSize(30);
                         resultText.setFillColor(sf::Color::Green);
-                        resultText.setPosition(100, 150);
+                        resultText.setPosition(150, 250);
 
                         window.clear(sf::Color::White);
                         window.draw(resultText);
                         window.display();
-                        sf::sleep(sf::seconds(3));
+                        sf::sleep(sf::seconds(2));
                     }
                     answered = true;
                 }
-                else if (event.key.code == sf::Keyboard::N)
+                else if (noButton.getGlobalBounds().contains((float)mousePos.x, (float)mousePos.y))
                 {
                     if ((*Node)->right)
                     {
@@ -141,28 +165,25 @@ void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
                         resultText.setString("I don't know what it is :(");
                         resultText.setCharacterSize(30);
                         resultText.setFillColor(sf::Color::Red);
-                        resultText.setPosition(100, 150);
+                        resultText.setPosition(100, 250);
 
                         window.clear(sf::Color::White);
                         window.draw(resultText);
                         window.display();
-                        sf::sleep(sf::seconds(3));
+                        sf::sleep(sf::seconds(2));
                     }
                     answered = true;
-                }
-                else if (event.key.code == sf::Keyboard::Q)
-                {
-                    return;
                 }
             }
         }
     }
 }
 
+
+
 CodeError CreateTree(BTree **Node, const char *name_base)
 {
     assert(Node != nullptr);
-    //BTree *Root = *Node;
 
     size_t file_size = 0;
     char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
@@ -245,7 +266,8 @@ CodeError ParseTree(BTree **Node, char **buffer)
         while (isspace(**buffer)) (*buffer)++;
 
         CodeError err = ParseTree(Node, buffer);
-        if (err != OK) {
+        if (err != OK)
+        {
             FreeTree(Node);
             return err;
         }
@@ -315,3 +337,96 @@ CodeError ParseTree(BTree **Node, char **buffer)
     LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
     return INVALID_FORMAT;
 }
+
+
+#if 0
+void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
+{
+    assert(Node != nullptr);
+
+    sf::Text questionText;
+    questionText.setFont(font);
+    questionText.setString("Is it " + std::string((*Node)->data) + "?");
+    questionText.setCharacterSize(30);
+    questionText.setFillColor(sf::Color::Black);
+    questionText.setPosition(200, 50);
+
+    sf::Text promptText;
+    promptText.setFont(font);
+    promptText.setString("(Y - Yes, N - No, Q - Quit)");
+    promptText.setCharacterSize(20);
+    promptText.setFillColor(sf::Color::Black);
+    promptText.setPosition(200, 100);
+
+    bool answered = false;
+    while (window.isOpen() && !answered)
+    {
+        window.clear(sf::Color::White);
+        window.draw(questionText);
+        window.draw(promptText);
+        window.display();
+
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+            {
+                window.close();
+                return;
+            }
+
+            if (event.type == sf::Event::KeyPressed)
+            {
+                if (event.key.code == sf::Keyboard::Y)
+                {
+                    if ((*Node)->left)
+                    {
+                        RunGuessingMode(window, font, &(*Node)->left);
+                    }
+                    else
+                    {
+                        sf::Text resultText;
+                        resultText.setFont(font);
+                        resultText.setString("I guessed it! It's " + std::string((*Node)->data));
+                        resultText.setCharacterSize(30);
+                        resultText.setFillColor(sf::Color::Green);
+                        resultText.setPosition(150, 150);
+
+                        window.clear(sf::Color::White);
+                        window.draw(resultText);
+                        window.display();
+                        sf::sleep(sf::seconds(3));
+                    }
+                    answered = true;
+                }
+                else if (event.key.code == sf::Keyboard::N)
+                {
+                    if ((*Node)->right)
+                    {
+                        RunGuessingMode(window, font, &(*Node)->right);
+                    }
+                    else
+                    {
+                        sf::Text resultText;
+                        resultText.setFont(font);
+                        resultText.setString("I don't know what it is :(");
+                        resultText.setCharacterSize(30);
+                        resultText.setFillColor(sf::Color::Red);
+                        resultText.setPosition(100, 150);
+
+                        window.clear(sf::Color::White);
+                        window.draw(resultText);
+                        window.display();
+                        sf::sleep(sf::seconds(3));
+                    }
+                    answered = true;
+                }
+                else if (event.key.code == sf::Keyboard::Q)
+                {
+                    return;
+                }
+            }
+        }
+    }
+}
+#endif
