@@ -3,19 +3,19 @@
 #include <assert.h>
 
 #include "tree.h"
-#include "read_file.h"
 #include "akinator.h"
 #include "color.h"
 #include "logger.h"
 
 int main()
 {
-    LoggerInit(LOGL_DEBUG, "logger/logfile.log", DEFAULT_MODE);
+    LoggerInit(LOGL_DEBUG, "lib/logger/logfile.log", DEFAULT_MODE);
 
     BTree *Root = nullptr;
     const char *name_base = "akinator/base.txt";
 
     MenuGuessing(&Root, name_base);
+    TreeDumpDot(Root);
     FreeTree(&Root);
 
     LoggerDeinit();

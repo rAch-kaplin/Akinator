@@ -18,6 +18,7 @@ bool CheckNoAnswer(char *answer);
 void ProcessingModeGame(BTree **Node, const char *name_base);
 
 void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node);
+void AkinatorInit(BTree **Node, const char *name_base);
 
 void AkinatorInit(BTree **Node, const char *name_base)
 {
@@ -178,8 +179,6 @@ void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
         }
     }
 }
-
-
 
 CodeError CreateTree(BTree **Node, const char *name_base)
 {

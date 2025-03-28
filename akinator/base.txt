@@ -3,12 +3,12 @@
 	{
 		?CULTURAL?
 		{
-			?did_he_eat_grandnothers_chiken?
-			{
-				<pushok>
-			}
+			?leave copeyka?
 			{
 				<POLTORASHKA>
+			}
+			{
+				<pushok>
 			}
 		}
 		{
@@ -25,7 +25,16 @@
 			{
 				?PHISICS?
 				{
-					<HOLLIN>
+					{
+						?LABS?
+						{
+							<DRAKON>
+						}
+						{
+							<OVCHOS>
+						}
+					}
+
 				}
 				{
 					<DED>

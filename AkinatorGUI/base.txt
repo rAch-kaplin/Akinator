@@ -25,7 +25,16 @@
 			{
 				?PHISICS?
 				{
-					<HOLLIN>
+					{
+						?LABS?
+						{
+							<DRAKON>
+						}
+						{
+							<OVCHOS>
+						}
+					}
+
 				}
 				{
 					<DED>

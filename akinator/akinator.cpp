@@ -14,6 +14,7 @@ bool CheckYesAnswer(char *answer);
 bool CheckNoAnswer(char *answer);
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
+CodeError AddNewObject(BTree** Node, const char* name_base);
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -21,7 +22,7 @@ void MenuGuessing(BTree **Node, const char *name_base)
 
         printf(WHTB"# Akinator     \n"
            " (c) rAch, 2025\n\n" RESET
-            YELB "Выберите соотвествующий режим работы\n\n"
+            YELB "Select the appropriate operating mode\n\n"
             MAGB "[g]: Guessing game \n"
 
            "[q]: Exit        \n\n" RESET);
@@ -126,6 +127,12 @@ CodeError Akinator(BTree **Node, const char *name_base)
         else if (CheckNoAnswer(answer))
         {
             printf(MAGENTA "I DO NOT FIND, LETS WRITE IT\n" RESET);
+            CodeError err = AddNewObject(Node, name_base);
+            if (err != OK)
+            {
+                LOG(LOGL_ERROR, "Failed to add a new object");
+                return err;
+            }
             free(answer);
             return OK;
         }
@@ -139,6 +146,58 @@ CodeError Akinator(BTree **Node, const char *name_base)
     }
 
     free(answer);
+    return OK;
+}
+
+CodeError AddNewObject(BTree** Node, const char* name_base)
+{
+    assert(Node != nullptr);
+
+    char* new_object = (char*)calloc(SIZE_QUESTION, sizeof(char));
+    char* question =   (char*)calloc(SIZE_QUESTION, sizeof(char));
+
+    if (!new_object || !question)
+    {
+        free(new_object);
+        free(question);
+        return ALLOC_ERR;
+    }
+
+    printf(MAGENTA "Who did you guess? " RESET);
+    scanf(" %99[^\n]", new_object);
+
+    printf(MAGENTA "What's the difference between %s and %s? " RESET, new_object, (*Node)->data);
+    scanf(" %99[^\n]", question);
+
+    BTree* NewNodeQuestion = nullptr;
+    CodeError err = CreateNode(&NewNodeQuestion, question);
+    if (err != OK)
+    {
+        free(new_object);
+        free(question);
+        return err;
+    }
+
+    BTree* NewNode = nullptr;
+    err = CreateNode(&NewNode, new_object);
+    if (err != OK)
+    {
+        free(new_object);
+        free(question);
+        return err;
+    }
+
+    BTree* OldNode = *Node;
+
+    *Node = NewNodeQuestion;
+
+    NewNodeQuestion->left = NewNode;
+
+    NewNodeQuestion->right = OldNode;
+
+    free(new_object);
+    free(question);
+
     return OK;
 }
 
