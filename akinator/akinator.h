@@ -3,7 +3,7 @@
 
 #include "tree.h"
 
-CodeError Akinator(BTree **Node, const char *name_base);
+CodeError Akinator(BTree **Node, const char *name_base, BTree **Root);
 CodeError ParseTree(BTree **Node, char **buffer);
 size_t GetBaseSizeFile(FILE *name_base);
 int GetMode();

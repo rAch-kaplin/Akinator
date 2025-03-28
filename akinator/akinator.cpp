@@ -14,7 +14,9 @@ bool CheckYesAnswer(char *answer);
 bool CheckNoAnswer(char *answer);
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
-CodeError AddNewObject(BTree** Node, const char* name_base);
+CodeError AddNewObject(BTree** Node);
+CodeError SaveDatabase(const char *filename, BTree *root);
+CodeError SaveTreeToFile(BTree *node, FILE *file, int depth);
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -62,12 +64,14 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
 {
     int mode_game = GetMode();
 
+    BTree **Root = Node;
+
     switch (mode_game)
     {
         case key_guessing:
         {
-            CreateTree(Node, name_base);
-            Akinator(Node, name_base);
+            CreateTree(Root, name_base);
+            Akinator(Node, name_base, Root);
             break;
         }
         case key_exit:
@@ -81,7 +85,7 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
     }
 }
 
-CodeError Akinator(BTree **Node, const char *name_base)
+CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
 {
     assert(Node != nullptr);
 
@@ -108,12 +112,12 @@ CodeError Akinator(BTree **Node, const char *name_base)
 
     if (CheckYesAnswer(answer) && (*Node)->left)
     {
-        Akinator(&(*Node)->left, name_base);
+        Akinator(&(*Node)->left, name_base, Root);
     }
 
     else if (CheckNoAnswer(answer) && (*Node)->right)
     {
-        Akinator(&(*Node)->right, name_base);
+        Akinator(&(*Node)->right, name_base, Root);
     }
 
     else
@@ -127,12 +131,29 @@ CodeError Akinator(BTree **Node, const char *name_base)
         else if (CheckNoAnswer(answer))
         {
             printf(MAGENTA "I DO NOT FIND, LETS WRITE IT\n" RESET);
-            CodeError err = AddNewObject(Node, name_base);
+            CodeError err = AddNewObject(Node);
             if (err != OK)
             {
                 LOG(LOGL_ERROR, "Failed to add a new object");
                 return err;
             }
+
+            printf(YELLOW "Do you want to save changes? (yes/no): " RESET);
+            char save_answer[MAX_QUESTION] = "";
+            scanf("%149s", save_answer);
+
+            if (CheckYesAnswer(save_answer))
+            {
+                if (SaveDatabase(name_base, *Root) == OK)
+                    printf(GREEN "Changes saved successfully!\n" RESET);
+                else
+                    printf(RED "Error saving the database!\n" RESET);
+            }
+            else
+            {
+                printf(CYAN "Changes were not saved.\n" RESET);
+            }
+
             free(answer);
             return OK;
         }
@@ -140,7 +161,7 @@ CodeError Akinator(BTree **Node, const char *name_base)
         {
             printf(RED "INCORRECT INPUT, PLEASE, TRY AGAIN\n" RESET);
             free(answer);
-            Akinator(Node, name_base);
+            Akinator(Node, name_base, Root);
             return INVALID_FORMAT;
         }
     }
@@ -149,7 +170,7 @@ CodeError Akinator(BTree **Node, const char *name_base)
     return OK;
 }
 
-CodeError AddNewObject(BTree** Node, const char* name_base)
+CodeError AddNewObject(BTree** Node)
 {
     assert(Node != nullptr);
 
@@ -198,6 +219,82 @@ CodeError AddNewObject(BTree** Node, const char* name_base)
     free(new_object);
     free(question);
 
+    return OK;
+}
+
+CodeError SaveTreeToFile(BTree *Node, FILE *base_file, int depth)
+{
+    if (Node == nullptr) return NODE_NULLPTR;
+
+    for (int i = 0; i < depth; i++)
+        fprintf(base_file, "\t");
+    fprintf(base_file, "{\n");
+
+    for (int i = 0; i < depth + 1; i++)
+        fprintf(base_file, "\t");
+
+    if (Node->left && Node->right)
+    {
+        fprintf(base_file, "?%s?\n", Node->data);
+
+        SaveTreeToFile(Node->left, base_file, depth + 1);
+
+        for (int i = 0; i < depth + 1; i++)
+            fprintf(base_file, "\t");
+        fprintf(base_file, "{\n");
+
+        if (Node->right->left && Node->right->right)
+        {
+            SaveTreeToFile(Node->right, base_file, depth + 2);
+        }
+        else
+        {
+            for (int i = 0; i < depth + 2; i++)
+                fprintf(base_file, "\t");
+            fprintf(base_file, "<%s>\n", Node->right->data);
+        }
+
+        for (int i = 0; i < depth + 1; i++)
+            fprintf(base_file, "\t");
+        fprintf(base_file, "}\n");
+    }
+    else
+    {
+        fprintf(base_file, "<%s>\n", Node->data);
+    }
+
+    for (int i = 0; i < depth; i++)
+        fprintf(base_file, "\t");
+    fprintf(base_file, "}\n");
+
+    return OK;
+}
+
+CodeError SaveDatabase(const char *filename, BTree *Root)
+{
+    if (filename == nullptr || Root == nullptr)
+    {
+        LOG(LOGL_ERROR, "INVALID_ARGUMENT");
+        return INVALID_ARGUMENT;
+    }
+
+    FILE *file = fopen(filename, "w");
+    if (!file)
+    {
+        LOG(LOGL_ERROR, "FAILED_TO_OPEN_FILE");
+        return FILE_NOT_OPEN;
+    }
+
+    CodeError err = SaveTreeToFile(Root, file, 0);
+    fclose(file);
+
+    if (err != OK)
+    {
+        LOG(LOGL_ERROR, "FAILED_TO_SAVE_TREE");
+        return err;
+    }
+
+    LOG(LOGL_INFO, "Database successfully saved to %s", filename);
     return OK;
 }
 

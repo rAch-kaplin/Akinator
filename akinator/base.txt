@@ -16,33 +16,42 @@
 		}
 	}
 	{
-		?TEACHES?
 		{
-			?MATH?
+			?TEACHES?
 			{
-				<ZNAMENSKAY>
-			}
-			{
-				?PHISICS?
+				?MATH?
+				{
+					<ZNAMENSKAY>
+				}
 				{
 					{
-						?LABS?
+						?PHISICS?
 						{
-							<DRAKON>
+							?LABS?
+							{
+								<DRAKON>
+							}
+							{
+								<OVCHOS>
+							}
 						}
 						{
-							<OVCHOS>
+							<DED>
 						}
 					}
-
-				}
-				{
-					<DED>
 				}
 			}
-		}
-		{
-			<STUDENT>
+			{
+				{
+					?Study?
+					{
+						<BOTAN>
+					}
+					{
+						<STUDENT>
+					}
+				}
+			}
 		}
 	}
 }
