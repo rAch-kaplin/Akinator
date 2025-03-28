@@ -7,7 +7,6 @@
 #include "akinator.h"
 #include "logger.h"
 
-
 const size_t SIZE_QUESTION = 100;
 
 bool CheckYesAnswer(char *answer);
@@ -211,9 +210,7 @@ CodeError AddNewObject(BTree** Node)
     BTree* OldNode = *Node;
 
     *Node = NewNodeQuestion;
-
     NewNodeQuestion->left = NewNode;
-
     NewNodeQuestion->right = OldNode;
 
     free(new_object);
