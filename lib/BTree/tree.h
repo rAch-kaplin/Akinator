@@ -16,6 +16,7 @@ typedef struct BTree
     elem_t data;
     struct BTree *left;
     struct BTree *right;
+    struct BTree *parent;
 } BTree;
 
 enum CodeError
@@ -32,12 +33,13 @@ enum CodeError
     BUFFER_OVERFLOW         = 0x0100,
 };
 
-
 //CodeError InsertLinesIntoTree(BTree **Root, FileData *file_data);
 
-CodeError CreateNode(BTree **Node, elem_t value);
+//CodeError CreateNode(BTree **Node, elem_t value);
+CodeError CreateNode(BTree** Node, elem_t data, BTree* parent);
 CodeError FreeTree(BTree **Node);
-CodeError InsertNode(BTree **Root, elem_t value);
+//CodeError InsertNode(BTree **Root, elem_t value);
+CodeError InsertNode(BTree** Root, elem_t data, BTree* parent);
 BTree* NodeFind(BTree *Root, elem_t value);
 BTree* NodeFind2(BTree *Root, elem_t value);
 CodeError TreeTraversal(BTree *Node);

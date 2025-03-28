@@ -21,7 +21,13 @@
 			{
 				?MATH?
 				{
-					<ZNAMENSKAY>
+					?Cool seminars?
+					{
+						<ZHESTKOV>
+					}
+					{
+						<ZNAMENSKAY>
+					}
 				}
 				{
 					{

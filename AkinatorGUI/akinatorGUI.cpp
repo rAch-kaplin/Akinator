@@ -187,7 +187,7 @@ CodeError CreateTree(BTree **Node, const char *name_base)
     size_t file_size = 0;
     char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
     char *pars_buffer = base_buffer;
-    CodeError err = ParseTree(Node, &pars_buffer);
+    CodeError err = ParseTree(Node, &pars_buffer, nullptr);
     if (err != OK)
     {
         LOG(LOGL_ERROR, "ParsTree error: %d", err);
@@ -240,7 +240,7 @@ char *ReadBaseToBuffer(const char *name_base, size_t *file_size)
     return buffer;
 }
 
-CodeError ParseTree(BTree **Node, char **buffer)
+CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 {
     LOG(LOGL_DEBUG, "Start ParseTree");
 
@@ -264,9 +264,8 @@ CodeError ParseTree(BTree **Node, char **buffer)
 
         while (isspace(**buffer)) (*buffer)++;
 
-        CodeError err = ParseTree(Node, buffer);
-        if (err != OK)
-        {
+        CodeError err = ParseTree(Node, buffer, parent);
+        if (err != OK) {
             FreeTree(Node);
             return err;
         }
@@ -289,7 +288,7 @@ CodeError ParseTree(BTree **Node, char **buffer)
     {
         (*buffer)++;
 
-        char name[MAX_QUESTION] = {};
+        char name[MAX_QUESTION] = "";
         if (sscanf(*buffer, "%[^>]>", name) != 1)
         {
             LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
@@ -298,14 +297,14 @@ CodeError ParseTree(BTree **Node, char **buffer)
         (*buffer) += strlen(name) + 1;
 
         LOG(LOGL_DEBUG, "Leaf node: %s", name);
-        return CreateNode(Node, name);
+        return CreateNode(Node, name, parent);
     }
 
     if (**buffer == '?')
     {
         (*buffer)++;
 
-        char question[MAX_QUESTION] = {};
+        char question[MAX_QUESTION] = "";
         if (sscanf(*buffer, "%[^?]?", question) != 1)
         {
             LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
@@ -314,17 +313,17 @@ CodeError ParseTree(BTree **Node, char **buffer)
         (*buffer) += strlen(question) + 1;
 
         LOG(LOGL_DEBUG, "Question node: %s", question);
-        CodeError err = CreateNode(Node, question);
+        CodeError err = CreateNode(Node, question, parent);
         if (err != OK) return err;
 
-        err = ParseTree(&((*Node)->left), buffer);
+        err = ParseTree(&((*Node)->left), buffer, *Node);
         if (err != OK)
         {
             FreeTree(Node);
             return err;
         }
 
-        err = ParseTree(&((*Node)->right), buffer);
+        err = ParseTree(&((*Node)->right), buffer, *Node);
         if (err != OK) {
             FreeTree(Node);
             return err;
@@ -336,96 +335,3 @@ CodeError ParseTree(BTree **Node, char **buffer)
     LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
     return INVALID_FORMAT;
 }
-
-
-#if 0
-void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node)
-{
-    assert(Node != nullptr);
-
-    sf::Text questionText;
-    questionText.setFont(font);
-    questionText.setString("Is it " + std::string((*Node)->data) + "?");
-    questionText.setCharacterSize(30);
-    questionText.setFillColor(sf::Color::Black);
-    questionText.setPosition(200, 50);
-
-    sf::Text promptText;
-    promptText.setFont(font);
-    promptText.setString("(Y - Yes, N - No, Q - Quit)");
-    promptText.setCharacterSize(20);
-    promptText.setFillColor(sf::Color::Black);
-    promptText.setPosition(200, 100);
-
-    bool answered = false;
-    while (window.isOpen() && !answered)
-    {
-        window.clear(sf::Color::White);
-        window.draw(questionText);
-        window.draw(promptText);
-        window.display();
-
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                window.close();
-                return;
-            }
-
-            if (event.type == sf::Event::KeyPressed)
-            {
-                if (event.key.code == sf::Keyboard::Y)
-                {
-                    if ((*Node)->left)
-                    {
-                        RunGuessingMode(window, font, &(*Node)->left);
-                    }
-                    else
-                    {
-                        sf::Text resultText;
-                        resultText.setFont(font);
-                        resultText.setString("I guessed it! It's " + std::string((*Node)->data));
-                        resultText.setCharacterSize(30);
-                        resultText.setFillColor(sf::Color::Green);
-                        resultText.setPosition(150, 150);
-
-                        window.clear(sf::Color::White);
-                        window.draw(resultText);
-                        window.display();
-                        sf::sleep(sf::seconds(3));
-                    }
-                    answered = true;
-                }
-                else if (event.key.code == sf::Keyboard::N)
-                {
-                    if ((*Node)->right)
-                    {
-                        RunGuessingMode(window, font, &(*Node)->right);
-                    }
-                    else
-                    {
-                        sf::Text resultText;
-                        resultText.setFont(font);
-                        resultText.setString("I don't know what it is :(");
-                        resultText.setCharacterSize(30);
-                        resultText.setFillColor(sf::Color::Red);
-                        resultText.setPosition(100, 150);
-
-                        window.clear(sf::Color::White);
-                        window.draw(resultText);
-                        window.display();
-                        sf::sleep(sf::seconds(3));
-                    }
-                    answered = true;
-                }
-                else if (event.key.code == sf::Keyboard::Q)
-                {
-                    return;
-                }
-            }
-        }
-    }
-}
-#endif

@@ -47,7 +47,7 @@ CodeError CreateTree(BTree **Node, const char *name_base)
     size_t file_size = 0;
     char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
     char *pars_buffer = base_buffer;
-    CodeError err = ParseTree(Node, &pars_buffer);
+    CodeError err = ParseTree(Node, &pars_buffer, nullptr);
     if (err != OK)
     {
         LOG(LOGL_ERROR, "ParsTree error: %d", err);
@@ -190,7 +190,7 @@ CodeError AddNewObject(BTree** Node)
     scanf(" %99[^\n]", question);
 
     BTree* NewNodeQuestion = nullptr;
-    CodeError err = CreateNode(&NewNodeQuestion, question);
+    CodeError err = CreateNode(&NewNodeQuestion, question, (*Node)->parent);
     if (err != OK)
     {
         free(new_object);
@@ -199,7 +199,7 @@ CodeError AddNewObject(BTree** Node)
     }
 
     BTree* NewNode = nullptr;
-    err = CreateNode(&NewNode, new_object);
+    err = CreateNode(&NewNode, new_object, NewNodeQuestion);
     if (err != OK)
     {
         free(new_object);
@@ -212,6 +212,8 @@ CodeError AddNewObject(BTree** Node)
     *Node = NewNodeQuestion;
     NewNodeQuestion->left = NewNode;
     NewNodeQuestion->right = OldNode;
+
+    OldNode->parent = NewNodeQuestion;
 
     free(new_object);
     free(question);
@@ -353,7 +355,7 @@ char *ReadBaseToBuffer(const char *name_base, size_t *file_size)
     return buffer;
 }
 
-CodeError ParseTree(BTree **Node, char **buffer)
+CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 {
     LOG(LOGL_DEBUG, "Start ParseTree");
 
@@ -377,7 +379,7 @@ CodeError ParseTree(BTree **Node, char **buffer)
 
         while (isspace(**buffer)) (*buffer)++;
 
-        CodeError err = ParseTree(Node, buffer);
+        CodeError err = ParseTree(Node, buffer, parent);
         if (err != OK) {
             FreeTree(Node);
             return err;
@@ -401,7 +403,7 @@ CodeError ParseTree(BTree **Node, char **buffer)
     {
         (*buffer)++;
 
-        char name[MAX_QUESTION] = {};
+        char name[MAX_QUESTION] = "";
         if (sscanf(*buffer, "%[^>]>", name) != 1)
         {
             LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
@@ -410,14 +412,14 @@ CodeError ParseTree(BTree **Node, char **buffer)
         (*buffer) += strlen(name) + 1;
 
         LOG(LOGL_DEBUG, "Leaf node: %s", name);
-        return CreateNode(Node, name);
+        return CreateNode(Node, name, parent);
     }
 
     if (**buffer == '?')
     {
         (*buffer)++;
 
-        char question[MAX_QUESTION] = {};
+        char question[MAX_QUESTION] = "";
         if (sscanf(*buffer, "%[^?]?", question) != 1)
         {
             LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
@@ -426,17 +428,17 @@ CodeError ParseTree(BTree **Node, char **buffer)
         (*buffer) += strlen(question) + 1;
 
         LOG(LOGL_DEBUG, "Question node: %s", question);
-        CodeError err = CreateNode(Node, question);
+        CodeError err = CreateNode(Node, question, parent);
         if (err != OK) return err;
 
-        err = ParseTree(&((*Node)->left), buffer);
+        err = ParseTree(&((*Node)->left), buffer, *Node);
         if (err != OK)
         {
             FreeTree(Node);
             return err;
         }
 
-        err = ParseTree(&((*Node)->right), buffer);
+        err = ParseTree(&((*Node)->right), buffer, *Node);
         if (err != OK) {
             FreeTree(Node);
             return err;

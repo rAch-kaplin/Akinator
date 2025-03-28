@@ -4,7 +4,8 @@
 #include "tree.h"
 
 CodeError Akinator(BTree **Node, const char *name_base, BTree **Root);
-CodeError ParseTree(BTree **Node, char **buffer);
+//CodeError ParseTree(BTree **Node, char **buffer);
+CodeError ParseTree(BTree **Node, char **buffer, BTree *parent);
 size_t GetBaseSizeFile(FILE *name_base);
 int GetMode();
 CodeError CreateTree(BTree **Node, const char *name_base);
