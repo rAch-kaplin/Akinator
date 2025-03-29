@@ -66,6 +66,7 @@ int GenerateGraph(BTree *Node, char* buffer, int* buffer_len, const size_t BUFFE
                             "\t\t         </table> >];\n",
                             Node, Node, Node->data, Node->parent, Node->left, Node->right);
 
+
     if (Node->left)
     {
         *buffer_len += GenerateGraph(Node->left, buffer, buffer_len, BUFFER_SIZE);

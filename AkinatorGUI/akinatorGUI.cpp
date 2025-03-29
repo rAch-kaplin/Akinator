@@ -6,6 +6,7 @@
 #include "akinator.h"
 #include "color.h"
 #include "logger.h"
+#include "stack.h"
 
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
@@ -91,23 +92,38 @@ sf::RectangleShape CreateButton(sf::Vector2f size, sf::Color color, sf::Vector2f
     return button;
 }
 
+
 void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
 {
     assert(Node != nullptr);
 
     sf::Text questionText = CreateText(font, "It's " + std::string((*Node)->data) + "?", 30, sf::Color::Black, sf::Vector2f(200, 50));
 
-    sf::RectangleShape yesButton = CreateButton(sf::Vector2f(150, 50), sf::Color::Green, sf::Vector2f(200, 150));
-    sf::Text yesText = CreateText(font, "Yes", 24, sf::Color::White, sf::Vector2f(230, 160));
+    sf::Texture texture;
+    if (!texture.loadFromFile("images/" + std::string((*Node)->data) + ".jpg"))
+    {
+        if (!texture.loadFromFile("images/upload.png"))
+        {
+            LOG(LOGL_ERROR, "Failed to load image: %s", (*Node)->data);
+        }
 
-    sf::RectangleShape noButton = CreateButton(sf::Vector2f(150, 50), sf::Color::Red, sf::Vector2f(400, 150));
-    sf::Text noText = CreateText(font, "No", 24, sf::Color::White, sf::Vector2f(460, 160));
+    }
+
+    sf::Sprite sprite(texture);
+    sprite.setPosition(200, 100);
+
+    sf::RectangleShape yesButton = CreateButton(sf::Vector2f(150, 50), sf::Color::Green, sf::Vector2f(200, 400));
+    sf::Text yesText = CreateText(font, "Yes", 24, sf::Color::White, sf::Vector2f(230, 410));
+
+    sf::RectangleShape noButton = CreateButton(sf::Vector2f(150, 50), sf::Color::Red, sf::Vector2f(400, 400));
+    sf::Text noText = CreateText(font, "No", 24, sf::Color::White, sf::Vector2f(460, 410));
 
     bool answered = false;
     while (window.isOpen() && !answered)
     {
         window.clear(sf::Color::White);
         window.draw(questionText);
+        window.draw(sprite);
         window.draw(yesButton);
         window.draw(yesText);
         window.draw(noButton);
