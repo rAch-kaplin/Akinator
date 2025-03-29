@@ -31,6 +31,7 @@ enum CodeError
     INVALID_FORMAT          = 0x0040,
     EMPTY_VALUE             = 0x0080,
     BUFFER_OVERFLOW         = 0x0100,
+    ANOTHER_ERR             = 0x0200,
 };
 
 //CodeError InsertLinesIntoTree(BTree **Root, FileData *file_data);

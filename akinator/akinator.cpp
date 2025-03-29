@@ -1,11 +1,12 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <color.h>
 
 #include "tree.h"
 #include "akinator.h"
 #include "logger.h"
+#include "stack.h"
+#include "color.h"
 
 const size_t SIZE_QUESTION = 100;
 
@@ -16,6 +17,9 @@ void ProcessingModeGame(BTree **Node, const char *name_base);
 CodeError AddNewObject(BTree** Node);
 CodeError SaveDatabase(const char *filename, BTree *root);
 CodeError SaveTreeToFile(BTree *node, FILE *file, int depth);
+
+CodeError FindWordNode(stack *stk, BTree *Node, const char *word);
+CodeError DefinitionObject(BTree *Node);
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -71,6 +75,12 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
         {
             CreateTree(Root, name_base);
             Akinator(Node, name_base, Root);
+            break;
+        }
+        case key_definition:
+        {
+            CreateTree(Root, name_base);
+            DefinitionObject(*Root);
             break;
         }
         case key_exit:
@@ -449,4 +459,104 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 
     LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
     return INVALID_FORMAT;
+}
+
+CodeError DefinitionObject(BTree *Node)
+{
+    assert(Node);
+
+    struct stack stk = {};
+
+    errorCode err = stackCtor(&stk, 10);
+    if (err != STK_OK)
+    {
+        LOG(LOGL_ERROR, "StackCtor error");
+        return ANOTHER_ERR;
+    }
+
+    char *word = (char*)calloc(SIZE_QUESTION + 1, sizeof(char));
+    if (word == nullptr)
+    {
+        LOG(LOGL_ERROR, "Failed to allocate memory for a word\n");
+        stackDtor(&stk);
+        return ALLOC_ERR;
+    }
+
+    printf(YELLOW "Enter the word, you want define: " RESET);
+    scanf("%99s", word);
+    printf("\n");
+
+    CodeError error = FindWordNode(&stk, Node, word);
+    if (error == NODE_NULLPTR)
+    {
+        printf(RED "Word not found in the tree.\n" RESET);
+    }
+
+    free(word);
+    stackDtor(&stk);
+
+    return OK;
+}
+
+CodeError FindWordNode(stack *stk, BTree *Node, const char *word)
+{
+    assert(Node);
+    assert(stk);
+    assert(word);
+
+    stackPush(stk, (stackElem)Node);
+
+    if (strcmp(Node->data, word) == 0)
+    {
+        printf(GREEN "Definition found: %s\n" RESET, Node->data);
+
+        stackElem popped_elem_w = 0;
+        BTree* current_node = nullptr;
+        BTree* child_node = nullptr;
+
+        printf(MAGENTA "%s: " RESET, word);
+
+        stackPop(stk, &popped_elem_w);
+        current_node = (BTree*)popped_elem_w;
+
+        while (stk->size > 0)
+        {
+            child_node = current_node;
+            stackPop(stk, &popped_elem_w);
+            current_node = (BTree*)popped_elem_w;
+
+            if (current_node->left == child_node)
+            {
+                printf(CYAN "%s " RESET, current_node->data);
+            }
+            else if (current_node->right == child_node)
+            {
+                printf(RED "not " CYAN "%s " RESET, current_node->data);
+            }
+            else
+            {
+                printf(RED "[invalid path] "RESET);
+            }
+        }
+        printf("\n");
+
+        return OK;
+    }
+
+    if (Node->left != nullptr)
+    {
+        CodeError err = FindWordNode(stk, Node->left, word);
+        if (err == OK) return OK;
+    }
+
+    if (Node->right != nullptr)
+    {
+        CodeError err = FindWordNode(stk, Node->right, word);
+        if (err == OK) return OK;
+    }
+
+    stackElem popped_elem = 0;
+    stackPop(stk, &popped_elem);
+
+    return NODE_NULLPTR;
 }

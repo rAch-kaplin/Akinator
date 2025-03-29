@@ -16,9 +16,10 @@ const size_t MAX_QUESTION = 150;
 
 enum mode
 {
-    key_guessing = 103,
-    key_restart  = 114,
-    key_exit     = 113,
+    key_guessing   = 103,
+    key_restart    = 114,
+    key_exit       = 113,
+    key_definition = 100,
 };
 
 
