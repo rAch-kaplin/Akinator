@@ -20,6 +20,7 @@ enum mode
     key_restart    = 114,
     key_exit       = 113,
     key_definition = 100,
+    key_difference =  68,
 };
 
 

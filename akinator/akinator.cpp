@@ -6,6 +6,7 @@
 #include "akinator.h"
 #include "logger.h"
 #include "stack.h"
+#include "debug.h"
 #include "color.h"
 
 const size_t SIZE_QUESTION = 100;
@@ -20,6 +21,9 @@ CodeError SaveTreeToFile(BTree *node, FILE *file, int depth);
 
 CodeError FindWordNode(stack *stk, BTree *Node, const char *word);
 CodeError DefinitionObject(BTree *Node);
+CodeError FindDifference(BTree* Node);
+void ReverseStack(struct stack* stk);
+void PrintDefinition(stack *stk, char *word);
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -28,7 +32,9 @@ void MenuGuessing(BTree **Node, const char *name_base)
         printf(WHTB"# Akinator     \n"
            " (c) rAch, 2025\n\n" RESET
             YELB "Select the appropriate operating mode\n\n"
-            MAGB "[g]: Guessing game \n"
+            MAGB "[g]: Guessing  \n"
+            MAGB "[d]: Defenition\n"
+            MAGB "[D]: Diference \n"
 
            "[q]: Exit        \n\n" RESET);
 
@@ -81,6 +87,12 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
         {
             CreateTree(Root, name_base);
             DefinitionObject(*Root);
+            break;
+        }
+        case key_difference:
+        {
+            CreateTree(Root, name_base);
+            FindDifference(*Node);
             break;
         }
         case key_exit:
@@ -461,6 +473,39 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
     return INVALID_FORMAT;
 }
 
+void PrintDefinition(stack *stk, char *word)
+{
+    stackElem popped_elem_w = 0;
+    BTree* current_node = nullptr;
+    BTree* child_node = nullptr;
+
+    printf(MAGENTA "%s: " RESET, word);
+
+    stackPop(stk, &popped_elem_w);
+    current_node = (BTree*)popped_elem_w;
+
+    while (stk->size > 0)
+    {
+        child_node = current_node;
+        stackPop(stk, &popped_elem_w);
+        current_node = (BTree*)popped_elem_w;
+
+        if (current_node->left == child_node)
+        {
+            printf(CYAN "%s " RESET, current_node->data);
+        }
+        else if (current_node->right == child_node)
+        {
+            printf(RED "not " CYAN "%s " RESET, current_node->data);
+        }
+        else
+        {
+            printf(RED "[invalid path] "RESET);
+        }
+    }
+    printf("\n");
+}
+
 CodeError DefinitionObject(BTree *Node)
 {
     assert(Node);
@@ -492,6 +537,8 @@ CodeError DefinitionObject(BTree *Node)
         printf(RED "Word not found in the tree.\n" RESET);
     }
 
+    PrintDefinition(&stk, word);
+
     free(word);
     stackDtor(&stk);
 
@@ -509,37 +556,6 @@ CodeError FindWordNode(stack *stk, BTree *Node, const char *word)
     if (strcmp(Node->data, word) == 0)
     {
         printf(GREEN "Definition found: %s\n" RESET, Node->data);
-
-        stackElem popped_elem_w = 0;
-        BTree* current_node = nullptr;
-        BTree* child_node = nullptr;
-
-        printf(MAGENTA "%s: " RESET, word);
-
-        stackPop(stk, &popped_elem_w);
-        current_node = (BTree*)popped_elem_w;
-
-        while (stk->size > 0)
-        {
-            child_node = current_node;
-            stackPop(stk, &popped_elem_w);
-            current_node = (BTree*)popped_elem_w;
-
-            if (current_node->left == child_node)
-            {
-                printf(CYAN "%s " RESET, current_node->data);
-            }
-            else if (current_node->right == child_node)
-            {
-                printf(RED "not " CYAN "%s " RESET, current_node->data);
-            }
-            else
-            {
-                printf(RED "[invalid path] "RESET);
-            }
-        }
-        printf("\n");
-
         return OK;
     }
 
@@ -560,3 +576,108 @@ CodeError FindWordNode(stack *stk, BTree *Node, const char *word)
 
     return NODE_NULLPTR;
 }
+
+void ReverseStack(stack* stk)
+{
+    LOG(LOGL_INFO, "Start reverse stack");
+    if (!stk || stk->size == 0) return;
+
+    struct stack temp_stk = {};
+    if (stackCtor(&temp_stk, (size_t)stk->size) != STK_OK)
+    {
+        LOG(LOGL_ERROR, "Failed to construct temporary stack");
+        return;
+    }
+
+    stackElem elem = 0;
+
+    while (stackPop(stk, &elem) == STK_OK)
+    {
+        stackPush(&temp_stk, elem);
+    }
+
+    free(stk->data);
+
+    *stk = temp_stk;
+    temp_stk.data = nullptr;
+
+    stackDtor(&temp_stk);
+    LOG(LOGL_INFO, "End reverse stack");
+}
+
+CodeError FindDifference(BTree* Node)
+{
+    assert(Node);
+
+    char* word1 = (char*)calloc(SIZE_QUESTION, sizeof(char));
+    char* word2 = (char*)calloc(SIZE_QUESTION, sizeof(char));
+    if (!word1 || !word2)
+    {
+        free(word1);
+        free(word2);
+        return ALLOC_ERR;
+    }
+
+    printf(YELLOW "Enter first word to compare: " RESET);
+    scanf("%99s", word1);
+    printf(YELLOW "Enter second word to compare: " RESET);
+    scanf("%99s", word2);
+
+    struct stack stk1 = {}, stk2 = {};
+    if (stackCtor(&stk1, 10) != STK_OK || stackCtor(&stk2, 10) != STK_OK)
+    {
+        free(word1);
+        free(word2);
+        return ANOTHER_ERR;
+    }
+
+    CodeError err1 = FindWordNode(&stk1, Node, word1);
+    CodeError err2 = FindWordNode(&stk2, Node, word2);
+
+    if (err1 == NODE_NULLPTR || err2 == NODE_NULLPTR)
+    {
+        printf(RED "One or both words not found in the tree.\n" RESET);
+        free(word1);
+        free(word2);
+        stackDtor(&stk1);
+        stackDtor(&stk2);
+        return NODE_NULLPTR;
+    }
+
+    LOG(LOGL_INFO, "\n\n\n");
+    ReverseStack(&stk1);
+    LOG(LOGL_INFO, "\n\n\n");
+    ReverseStack(&stk2);
+
+    printf(GREEN "Comparison of '%s' and '%s':\n" RESET, word1, word2);
+
+    stackElem elem1 = 0, elem2 = 0;
+    BTree *Node1 = NULL, *Node2 = NULL;
+
+    while (stackPop(&stk1, &elem1) == STK_OK && stackPop(&stk2, &elem2) == STK_OK)
+    {
+        Node1 = (BTree*)elem1;
+        Node2 = (BTree*)elem2;
+
+        if (Node1 != Node2)
+        {
+            printf(MAGENTA "Difference found:\n" RESET);
+            printf(CYAN"- %s is %s%s\n"RESET, word1,
+                   (Node1 == Node1->parent->left) ? "" : "not ",
+                   Node1->parent->data);
+            printf(CYAN"- %s is %s%s\n"RESET, word2,
+                   (Node2 == Node2->parent->left) ? "" : "not ",
+                   Node2->parent->data);
+            break;
+        }
+
+    }
+
+    free(word1);
+    free(word2);
+    stackDtor(&stk1);
+    stackDtor(&stk2);
+    return OK;
+}
+
+
