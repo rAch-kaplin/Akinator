@@ -41,7 +41,7 @@ CodeError CreateNode(BTree** Node, elem_t data, BTree* parent);
 CodeError FreeTree(BTree **Node);
 //CodeError InsertNode(BTree **Root, elem_t value);
 CodeError InsertNode(BTree** Root, elem_t data, BTree* parent);
-BTree* NodeFind(BTree *Root, elem_t value);
+BTree* NodeFind(BTree *Root, elem_t value); //
 BTree* NodeFind2(BTree *Root, elem_t value);
 CodeError TreeTraversal(BTree *Node);
 CodeError InsertNodeLoop(BTree **Root, elem_t value);

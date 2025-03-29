@@ -7,12 +7,12 @@
 #include "color.h"
 #include "logger.h"
 
-int main()
+int main() // TODO const
 {
-    LoggerInit(LOGL_DEBUG, "lib/logger/logfile.log", DEFAULT_MODE);
+    LoggerInit(LOGL_DEBUG, "lib/logger/logfile.log", DEFAULT_MODE); //TODO logget(output)
 
     BTree *Root = nullptr;
-    const char *name_base = "akinator/base.txt";
+    const char *name_base = "akinator/base.txt"; //TODO arg
 
     MenuGuessing(&Root, name_base);
     TreeDumpDot(Root);

@@ -15,7 +15,7 @@ void AkinatorInit(BTree **Node, const char *name_base);
 
 int main()
 {
-    LoggerInit(LOGL_DEBUG, "logger/logfile.log", DEFAULT_MODE);
+    LoggerInit(LOGL_DEBUG, "logfile.log", DEFAULT_MODE);
 
     BTree *Root = nullptr;
     const char *name_base = "base.txt";

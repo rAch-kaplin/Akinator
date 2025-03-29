@@ -19,7 +19,7 @@ CodeError AddNewObject(BTree** Node);
 CodeError SaveDatabase(const char *filename, BTree *root);
 CodeError SaveTreeToFile(BTree *node, FILE *file, int depth);
 
-CodeError FindWordNode(stack *stk, BTree *Node, const char *word);
+bool FindWordNode(stack *stk, BTree *Node, const char *word);
 CodeError DefinitionObject(BTree *Node);
 CodeError FindDifference(BTree* Node);
 void ReverseStack(struct stack* stk);
@@ -46,7 +46,7 @@ int GetMode()
     system("stty raw -echo");
     int c = getchar();
     system("stty sane");
-    return c;
+    return c; //TODO Termios
 }
 
 CodeError CreateTree(BTree **Node, const char *name_base)
@@ -118,9 +118,9 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
     }
 
     printf(CYAN "It's %s? (yes/no/q - quit/r - restart): " RESET, (*Node)->data);
-    scanf("%99s", answer);
+    scanf("%99s", answer); //TODO 99s
 
-    if (strcmp(answer, "q") == 0)
+    if (strcmp(answer, "q") == 0) //TODO q Q
     {
         free(answer);
         return OK;
@@ -129,8 +129,9 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
     {
         free(answer);
         return OK;
-    }
+    } //TODO Root
 
+    //FIXME func, enum
     if (CheckYesAnswer(answer) && (*Node)->left)
     {
         Akinator(&(*Node)->left, name_base, Root);
@@ -161,7 +162,7 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
 
             printf(YELLOW "Do you want to save changes? (yes/no): " RESET);
             char save_answer[MAX_QUESTION] = "";
-            scanf("%149s", save_answer);
+            scanf("%149s", save_answer); //TODO
 
             if (CheckYesAnswer(save_answer))
             {
@@ -218,7 +219,7 @@ CodeError AddNewObject(BTree** Node)
         free(new_object);
         free(question);
         return err;
-    }
+    } //TODO cpy question
 
     BTree* NewNode = nullptr;
     err = CreateNode(&NewNode, new_object, NewNodeQuestion);
@@ -471,7 +472,7 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 
     LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
     return INVALID_FORMAT;
-}
+} //TODO define for log, debug or not
 
 void PrintDefinition(stack *stk, char *word)
 {
@@ -511,8 +512,8 @@ CodeError DefinitionObject(BTree *Node)
     assert(Node);
 
     struct stack stk = {};
-
-    errorCode err = stackCtor(&stk, 10);
+    const size_t stack_size_default = 10;
+    errorCode err = stackCtor(&stk, stack_size_default);
     if (err != STK_OK)
     {
         LOG(LOGL_ERROR, "StackCtor error");
@@ -531,13 +532,15 @@ CodeError DefinitionObject(BTree *Node)
     scanf("%99s", word);
     printf("\n");
 
-    CodeError error = FindWordNode(&stk, Node, word);
-    if (error == NODE_NULLPTR)
+
+    if (FindWordNode(&stk, Node, word))
+    {
+        PrintDefinition(&stk, word);
+    }
+    else
     {
         printf(RED "Word not found in the tree.\n" RESET);
     }
-
-    PrintDefinition(&stk, word);
 
     free(word);
     stackDtor(&stk);
@@ -545,7 +548,7 @@ CodeError DefinitionObject(BTree *Node)
     return OK;
 }
 
-CodeError FindWordNode(stack *stk, BTree *Node, const char *word)
+bool FindWordNode(stack *stk, BTree *Node, const char *word)
 {
     assert(Node);
     assert(stk);
@@ -556,25 +559,22 @@ CodeError FindWordNode(stack *stk, BTree *Node, const char *word)
     if (strcmp(Node->data, word) == 0)
     {
         printf(GREEN "Definition found: %s\n" RESET, Node->data);
-        return OK;
+        return true;
     }
 
-    if (Node->left != nullptr)
-    {
-        CodeError err = FindWordNode(stk, Node->left, word);
-        if (err == OK) return OK;
-    }
+    const bool is_found =
+        ((Node->left  != nullptr) && FindWordNode(stk, Node->left, word)) ||
+        ((Node->right != nullptr) && FindWordNode(stk, Node->right, word));
 
-    if (Node->right != nullptr)
+    if (is_found)
     {
-        CodeError err = FindWordNode(stk, Node->right, word);
-        if (err == OK) return OK;
+        return true;
     }
 
     stackElem popped_elem = 0;
     stackPop(stk, &popped_elem);
 
-    return NODE_NULLPTR;
+    return false;
 }
 
 void ReverseStack(stack* stk)
@@ -599,7 +599,7 @@ void ReverseStack(stack* stk)
     free(stk->data);
 
     *stk = temp_stk;
-    temp_stk.data = nullptr;
+    temp_stk.data = nullptr; //destroy stack
 
     stackDtor(&temp_stk);
     LOG(LOGL_INFO, "End reverse stack");
@@ -631,10 +631,10 @@ CodeError FindDifference(BTree* Node)
         return ANOTHER_ERR;
     }
 
-    CodeError err1 = FindWordNode(&stk1, Node, word1);
-    CodeError err2 = FindWordNode(&stk2, Node, word2);
+    // CodeError err1 = FindWordNode(&stk1, Node, word1); //TODO
+    // CodeError err2 = FindWordNode(&stk2, Node, word2);
 
-    if (err1 == NODE_NULLPTR || err2 == NODE_NULLPTR)
+    if (!FindWordNode(&stk1, Node, word1) || !FindWordNode(&stk2, Node, word2))
     {
         printf(RED "One or both words not found in the tree.\n" RESET);
         free(word1);
