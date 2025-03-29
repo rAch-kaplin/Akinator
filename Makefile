@@ -25,7 +25,7 @@ do.exe: $(OBJECTS)
 
 build/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
 
 .PHONY: clean
 clean:
