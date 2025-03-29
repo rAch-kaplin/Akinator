@@ -11,8 +11,8 @@ CXXFLAGS = -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-l
          -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 SOURCES = akinator/main.cpp lib/BTree/tree.cpp GraphDump/graph_dump.cpp  akinator/akinator.cpp \
-          lib/logger/logger.cpp lib/stack/src/stack.cpp lib/stack/src/debug.cpp
-INCLUDES = -I./lib/BTree -I./akinator -I./lib/logger -I./common -I./lib/stack/include
+          lib/logger/logger.cpp lib/my_stack/src/stack.cpp lib/my_stack/src/debug.cpp
+INCLUDES = -I./lib/BTree -I./akinator -I./lib/logger -I./common -I./lib/my_stack/include
 
 OBJECTS = $(SOURCES:%.cpp=build/%.o)
 
