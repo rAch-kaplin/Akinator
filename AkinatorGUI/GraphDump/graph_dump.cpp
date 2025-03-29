@@ -8,7 +8,7 @@ CodeError TreeDumpDot(BTree* Root)
 {
     static int dump_counter = 0;
     const size_t PNG_NAME_SIZE = 30;
-    const size_t BUFFER_SIZE = 16384;
+    const size_t BUFFER_SIZE = 26384;
     char* buffer = (char*)calloc(BUFFER_SIZE, sizeof(char));
     if (buffer == nullptr)
     {

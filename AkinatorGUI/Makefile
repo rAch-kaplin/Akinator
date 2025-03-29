@@ -12,8 +12,8 @@ CXXFLAGS = -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-l
 
 LDFLAGS = -L/usr/local/lib -lsfml-graphics -lsfml-window -lsfml-system
 
-SOURCES = main.cpp akinatorGUI.cpp ../lib/BTree/tree.cpp GraphDump/graph_dump.cpp ../lib/logger/logger.cpp
-INCLUDES = -I./common -I./logger -I./../lib/BTree -I./../lib/logger
+SOURCES = main.cpp akinatorGUI.cpp ../lib/BTree/tree.cpp GraphDump/graph_dump.cpp ../lib/logger/logger.cpp ../lib/stack/src/stack.cpp ../lib/stack/src/debug.cpp
+INCLUDES = -I./common -I./logger -I./../lib/BTree -I./../lib/logger -I./../lib/stack/include
 
 OBJECTS = $(SOURCES:%.cpp=build/%.o)
 

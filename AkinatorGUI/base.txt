@@ -16,33 +16,48 @@
 		}
 	}
 	{
-		?TEACHES?
 		{
-			?MATH?
+			?TEACHES?
 			{
-				<ZNAMENSKAY>
-			}
-			{
-				?PHISICS?
+				?MATH?
 				{
+					?cool?
 					{
-						?LABS?
+						<zhestkov>
+					}
+					{
 						{
-							<DRAKON>
-						}
-						{
-							<OVCHOS>
+							?legenda?
+							{
+								<skubach>
+							}
+							{
+								<ZNAMENSKAY>
+							}
 						}
 					}
-
 				}
 				{
-					<DED>
+					{
+						?PHISICS?
+						{
+							?LABS?
+							{
+								<DRAKON>
+							}
+							{
+								<OVCHOS>
+							}
+						}
+						{
+							<DED>
+						}
+					}
 				}
 			}
-		}
-		{
-			<STUDENT>
+			{
+				<STUDENT>
+			}
 		}
 	}
 }
