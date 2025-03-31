@@ -52,7 +52,6 @@ int GetMode()
 CodeError CreateTree(BTree **Node, const char *name_base)
 {
     assert(Node != nullptr);
-    //BTree *Root = *Node;
 
     size_t file_size = 0;
     char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
@@ -290,7 +289,7 @@ CodeError SaveTreeToFile(BTree *Node, FILE *base_file, int depth)
     fprintf(base_file, "}\n");
 
     return OK;
-}
+} //TODO snprintf
 
 CodeError SaveDatabase(const char *filename, BTree *Root)
 {
@@ -468,7 +467,7 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
         }
 
         return OK;
-    }
+    } //TODO maybe make switch
 
     LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
     return INVALID_FORMAT;
@@ -600,6 +599,7 @@ void ReverseStack(stack* stk)
 
     *stk = temp_stk;
     temp_stk.data = nullptr; //destroy stack
+    //FIXME
 
     stackDtor(&temp_stk);
     LOG(LOGL_INFO, "End reverse stack");
@@ -630,9 +630,6 @@ CodeError FindDifference(BTree* Node)
         free(word2);
         return ANOTHER_ERR;
     }
-
-    // CodeError err1 = FindWordNode(&stk1, Node, word1); //TODO
-    // CodeError err2 = FindWordNode(&stk2, Node, word2);
 
     if (!FindWordNode(&stk1, Node, word1) || !FindWordNode(&stk2, Node, word2))
     {
