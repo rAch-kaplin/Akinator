@@ -14,7 +14,7 @@ const size_t SIZE_QUESTION = 100;
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
 CodeError AddNewObject(BTree** Node);
-CodeError SaveDatabase(const char *filename, BTree *root);
+CodeError SaveDatabase(Akinat *akn);
 CodeError SaveTreeToFile(BTree *node, FILE *file, int depth);
 
 bool FindWordNode(stack *stk, BTree *Node, const char *word);
@@ -23,8 +23,8 @@ CodeError FindDifference(BTree* Node);
 void ReverseStack(struct stack* stk);
 void PrintDefinition(stack *stk, char *word);
 
-CodeError HandleUnsolvedLeaf(BTree **Node, BTree **Root, const char *name_base);
-void HandleAnswer(AnswerType type_answ, const char *name_base, BTree **Node, BTree **Root);
+CodeError HandleUnsolvedLeaf(BTree **Node, Akinat *akn);
+void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn);
 
 AnswerType CheckAnswer(char *answer);
 
@@ -54,12 +54,12 @@ int GetMode()
     return c; //TODO Termios
 }
 
-CodeError CreateTree(BTree **Node, const char *name_base)
+CodeError CreateTree(BTree **Node, Akinat *akn)
 {
     assert(Node != nullptr);
 
     size_t file_size = 0;
-    char *base_buffer = ReadBaseToBuffer(name_base, &file_size);
+    char *base_buffer = ReadBaseToBuffer(akn->name_base, &file_size);
     char *pars_buffer = base_buffer;
     CodeError err = ParseTree(Node, &pars_buffer, nullptr);
     if (err != OK)
@@ -78,24 +78,25 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
     int mode_game = GetMode();
 
     BTree **Root = Node;
+    Akinat akn = {Node, name_base, nullptr};
 
     switch (mode_game)
     {
         case key_guessing:
         {
-            CreateTree(Root, name_base);
-            Akinator(Node, name_base, Root);
+            CreateTree(Node, &akn);
+            Akinator(Node, &akn);
             break;
         }
         case key_definition:
         {
-            CreateTree(Root, name_base);
+            CreateTree(Node, &akn);
             DefinitionObject(*Root);
             break;
         }
         case key_difference:
         {
-            CreateTree(Root, name_base);
+            CreateTree(Node, &akn);
             FindDifference(*Node);
             break;
         }
@@ -110,7 +111,7 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
     }
 }
 
-CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
+CodeError Akinator(BTree **Node, Akinat *akn)
 {
     assert(Node != nullptr);
 
@@ -132,7 +133,7 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
     else if (strcmp(answer, "r") == 0)
     {
         free(answer);
-        Akinator(Root, name_base, Root);
+        Akinator(akn->Root, akn);
     }
 
     AnswerType type_answ = CheckAnswer(answer);
@@ -140,21 +141,21 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
 
     if (type_answ != ANSWER_UNKNOW)
     {
-        HandleAnswer(type_answ, name_base, Node, Root);
+        HandleAnswer(Node, type_answ, akn);
     }
     else
     {
         printf(RED "INCORRECT INPUT, PLEASE, TRY AGAIN\n" RESET);
-        Akinator(Node, name_base, Root);
+        Akinator(Node, akn);
     }
 
     return OK;
 }
 
-CodeError HandleUnsolvedLeaf(BTree **Node, BTree **Root, const char *name_base)
+CodeError HandleUnsolvedLeaf(BTree **Node, Akinat *akn)
 {
     assert(Node != nullptr);
-    assert(Root != nullptr);
+    assert(akn->Root != nullptr);
 
     printf(MAGENTA "I DO NOT FIND, LETS WRITE IT\n" RESET);
     CodeError err = AddNewObject(Node);
@@ -172,7 +173,7 @@ CodeError HandleUnsolvedLeaf(BTree **Node, BTree **Root, const char *name_base)
 
     if (type_answ == ANSWER_YES)
     {
-        if (SaveDatabase(name_base, *Root) == OK)
+        if (SaveDatabase(akn) == OK)
             printf(GREEN "Changes saved successfully!\n" RESET);
         else
             printf(RED "Error saving the database!\n" RESET);
@@ -185,7 +186,7 @@ CodeError HandleUnsolvedLeaf(BTree **Node, BTree **Root, const char *name_base)
     return OK;
 }
 
-void HandleAnswer(AnswerType type_answ, const char *name_base, BTree **Node, BTree **Root)
+void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
 {
     assert(Node != nullptr);
 
@@ -193,16 +194,16 @@ void HandleAnswer(AnswerType type_answ, const char *name_base, BTree **Node, BTr
     {
         case ANSWER_YES:
         {
-            if ((*Node)->left != nullptr) Akinator(&(*Node)->left, name_base, Root);
-            else                          printf(GREEN "I FIND THE ELEMENT\n" RESET);
+            if ((*Node)->left != nullptr)  Akinator(&(*Node)->left, akn);
+            else                           printf(GREEN "I FIND THE ELEMENT\n" RESET);
 
             break;
         }
 
         case ANSWER_NO:
         {
-            if ((*Node)->right != nullptr) Akinator(&(*Node)->right, name_base, Root);
-            else                           HandleUnsolvedLeaf(Node, Root, name_base);
+            if ((*Node)->right != nullptr) Akinator(&(*Node)->right, akn);
+            else                           HandleUnsolvedLeaf(Node, akn);
 
             break;
         }
@@ -313,22 +314,22 @@ CodeError SaveTreeToFile(BTree *Node, FILE *base_file, int depth)
     return OK;
 } //TODO snprintf
 
-CodeError SaveDatabase(const char *filename, BTree *Root)
+CodeError SaveDatabase(Akinat *akn)
 {
-    if (filename == nullptr || Root == nullptr)
+    if (akn->name_base == nullptr || akn->Root == nullptr)
     {
         LOG(LOGL_ERROR, "INVALID_ARGUMENT");
         return INVALID_ARGUMENT;
     }
 
-    FILE *file = fopen(filename, "w");
+    FILE *file = fopen(akn->name_base, "w");
     if (!file)
     {
         LOG(LOGL_ERROR, "FAILED_TO_OPEN_FILE");
         return FILE_NOT_OPEN;
     }
 
-    CodeError err = SaveTreeToFile(Root, file, 0);
+    CodeError err = SaveTreeToFile(*(akn->Root), file, 0);
     fclose(file);
 
     if (err != OK)
@@ -337,7 +338,7 @@ CodeError SaveDatabase(const char *filename, BTree *Root)
         return err;
     }
 
-    LOG(LOGL_INFO, "Database successfully saved to %s", filename);
+    LOG(LOGL_INFO, "Database successfully saved to %s", akn->name_base);
     return OK;
 }
 
