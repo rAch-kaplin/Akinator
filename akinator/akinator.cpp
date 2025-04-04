@@ -13,20 +13,26 @@ const size_t SIZE_QUESTION = 100;
 #define MAX_SIZE_BUFFER "99"
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
-CodeError AddNewObject(BTree** Node);
-CodeError SaveDatabase(Akinat *akn);
-CodeError SaveTreeToFile(BTree *node, char *base_buf, int depth, int *cur_len, const size_t SIZE_BUFFER);
-
-bool FindWordNode(stack *stk, BTree *Node, const char *word);
+CodeError Akinator(BTree **Node, Akinat *akn);
 CodeError DefinitionObject(BTree *Node);
 CodeError FindDifference(BTree* Node);
-void ReverseStack(struct stack* stk);
-void PrintDefinition(stack *stk, char *word);
-
 CodeError HandleUnsolvedLeaf(BTree **Node, Akinat *akn);
 void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn);
-
-AnswerType CheckAnswer(char *answer);
+void PrintDefinition(stack *stk, const char *word);
+CodeError AddNewObject(BTree** Node);
+CodeError SaveDatabase(Akinat *akn);
+CodeError CreateTree(BTree **Node, Akinat *akn);
+CodeError SaveTreeToFile(BTree *node, char *base_buf, int depth, int *cur_len, const size_t SIZE_BUFFER);
+size_t GetBaseSizeFile(FILE *name_base);
+CodeError ParseTree(BTree **Node, char **buffer, BTree *parent);
+CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent);
+CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent);
+CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent);
+char *ReadBaseToBuffer(const char *name_base, size_t *file_size);
+AnswerType CheckAnswer(const char *answer);
+int GetMode();
+bool FindWordNode(stack *stk, BTree *Node, const char *word);
+void ReverseStack(struct stack* stk);
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -330,7 +336,7 @@ CodeError SaveDatabase(Akinat *akn)
     return OK;
 }
 
-AnswerType CheckAnswer(char *answer)
+AnswerType CheckAnswer(const char *answer)
 {
     assert(answer);
 
@@ -382,6 +388,83 @@ char *ReadBaseToBuffer(const char *name_base, size_t *file_size)
     return buffer;
 }
 
+CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent)
+{
+    LOG(LOGL_DEBUG, "Found {");
+
+    while (isspace(**buffer)) (*buffer)++;
+
+    CodeError err = ParseTree(Node, buffer, parent);
+    if (err != OK)
+    {
+        FreeTree(Node);
+        return err;
+    }
+
+    while (isspace(**buffer)) (*buffer)++;
+
+    if (**buffer != '}')
+    {
+        LOG(LOGL_ERROR, "MISSING_CLOSING_BRACE");
+        FreeTree(Node);
+        return INVALID_FORMAT;
+    }
+    (*buffer)++;
+    LOG(LOGL_DEBUG, "Found }");
+
+    return OK;
+}
+
+CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent)
+{
+    (*buffer)++;
+
+    char name[MAX_QUESTION] = "";
+    if (sscanf(*buffer, "%[^>]>", name) != 1)
+    {
+        LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
+        return INVALID_FORMAT;
+    }
+    (*buffer) += strlen(name) + 1;
+
+    LOG(LOGL_DEBUG, "Leaf node: %s", name);
+    return CreateNode(Node, name, parent);
+}
+
+CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent)
+{
+    (*buffer)++;
+
+    char question[MAX_QUESTION] = "";
+    if (sscanf(*buffer, "%[^?]?", question) != 1)
+    {
+        LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
+        return INVALID_FORMAT;
+    }
+    (*buffer) += strlen(question) + 1;
+
+    LOG(LOGL_DEBUG, "Question node: %s", question);
+    CodeError err = CreateNode(Node, question, parent);
+    if (err != OK) return err;
+
+    err = ParseTree(&((*Node)->left), buffer, *Node);
+    if (err != OK)
+    {
+        FreeTree(Node);
+        return err;
+    }
+
+    err = ParseTree(&((*Node)->right), buffer, *Node);
+    if (err != OK)
+    {
+        FreeTree(Node);
+        return err;
+    }
+
+    return OK;
+}
+
+
 CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 {
     LOG(LOGL_DEBUG, "Start ParseTree");
@@ -399,86 +482,32 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
         return UNEXPECTED_END_OF_INPUT;
     }
 
-    if (**buffer == '{')
+    CodeError err = OK;
+
+    switch (**buffer)
     {
-        (*buffer)++;
-        LOG(LOGL_DEBUG, "Found {");
+        case '{':
+            err = HandleNewNode(Node, buffer, parent);
+            break;
 
-        while (isspace(**buffer)) (*buffer)++;
+        case '<':
+            err = HandleLeafNode(Node, buffer, parent);
+            break;
 
-        CodeError err = ParseTree(Node, buffer, parent);
-        if (err != OK) {
-            FreeTree(Node);
-            return err;
-        }
-
-        while (isspace(**buffer)) (*buffer)++;
-
-        if (**buffer != '}')
+        case '?':
+            err = HandleQuestionNode(Node, buffer, parent);
+            break;
+        default:
         {
-            LOG(LOGL_ERROR, "MISSING_CLOSING_BRACE");
-            FreeTree(Node);
+            LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
             return INVALID_FORMAT;
         }
-        (*buffer)++;
-        LOG(LOGL_DEBUG, "Found }");
-
-        return OK;
     }
 
-    if (**buffer == '<')
-    {
-        (*buffer)++;
-
-        char name[MAX_QUESTION] = "";
-        if (sscanf(*buffer, "%[^>]>", name) != 1)
-        {
-            LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
-            return INVALID_FORMAT;
-        }
-        (*buffer) += strlen(name) + 1;
-
-        LOG(LOGL_DEBUG, "Leaf node: %s", name);
-        return CreateNode(Node, name, parent);
-    }
-
-    if (**buffer == '?')
-    {
-        (*buffer)++;
-
-        char question[MAX_QUESTION] = "";
-        if (sscanf(*buffer, "%[^?]?", question) != 1)
-        {
-            LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
-            return INVALID_FORMAT;
-        }
-        (*buffer) += strlen(question) + 1;
-
-        LOG(LOGL_DEBUG, "Question node: %s", question);
-        CodeError err = CreateNode(Node, question, parent);
-        if (err != OK) return err;
-
-        err = ParseTree(&((*Node)->left), buffer, *Node);
-        if (err != OK)
-        {
-            FreeTree(Node);
-            return err;
-        }
-
-        err = ParseTree(&((*Node)->right), buffer, *Node);
-        if (err != OK) {
-            FreeTree(Node);
-            return err;
-        }
-
-        return OK;
-    } //TODO maybe make switch
-
-    LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
-    return INVALID_FORMAT;
+    return OK;
 }
 
-void PrintDefinition(stack *stk, char *word)
+void PrintDefinition(stack *stk, const char *word)
 {
     stackElem popped_elem_w = 0;
     BTree* current_node = nullptr;

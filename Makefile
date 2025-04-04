@@ -10,23 +10,34 @@ CXXFLAGS = -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-l
          -flto-odr-type-merging -fno-omit-frame-pointer -Wstack-usage=8192 -pie -fPIE -Werror=vla                                                     \
          -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
-SOURCES = akinator/main.cpp lib/BTree/tree.cpp GraphDump/graph_dump.cpp  akinator/akinator.cpp \
-          lib/logger/logger.cpp lib/my_stack/src/stack.cpp lib/my_stack/src/debug.cpp lib/arg_parser/arg_parser.cpp
+SOURCES = akinator/main.cpp            \
+          lib/BTree/tree.cpp           \
+          GraphDump/graph_dump.cpp     \
+          akinator/akinator.cpp        \
+          lib/logger/logger.cpp        \
+          lib/my_stack/src/stack.cpp   \
+          lib/my_stack/src/debug.cpp   \
+          lib/arg_parser/arg_parser.cpp
+
 INCLUDES = -I./lib/BTree -I./akinator -I./lib/logger -I./common -I./lib/my_stack/include -I./lib/arg_parser
 
 OBJECTS = $(SOURCES:%.cpp=build/%.o)
 
+DEPS = $(OBJECTS:%.o=%.d)
+
 .PHONY: all
-all: do.exe
+all: do
 	@echo -e "\033[33mCompilation complete.\033[0m"
 
 do.exe: $(OBJECTS)
-	@$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o do
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o $@
 
 build/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXXFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
 
 .PHONY: clean
 clean:
 	rm -rf do.exe build
+
+-include $(DEPS)
