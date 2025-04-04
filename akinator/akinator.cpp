@@ -15,7 +15,7 @@ const size_t SIZE_QUESTION = 100;
 void ProcessingModeGame(BTree **Node, const char *name_base);
 CodeError AddNewObject(BTree** Node);
 CodeError SaveDatabase(Akinat *akn);
-CodeError SaveTreeToFile(BTree *node, FILE *file, int depth);
+CodeError SaveTreeToFile(BTree *node, char *base_buf, int depth, int *cur_len, const size_t SIZE_BUFFER);
 
 bool FindWordNode(stack *stk, BTree *Node, const char *word);
 CodeError DefinitionObject(BTree *Node);
@@ -27,8 +27,6 @@ CodeError HandleUnsolvedLeaf(BTree **Node, Akinat *akn);
 void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn);
 
 AnswerType CheckAnswer(char *answer);
-
-//TODO make struct for akinator gameplay: files, Nodes ...
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -78,7 +76,7 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
     int mode_game = GetMode();
 
     BTree **Root = Node;
-    Akinat akn = {Node, name_base, nullptr};
+    Akinat akn = {Node, name_base, "akinator/new_base.txt"};
 
     switch (mode_game)
     {
@@ -266,53 +264,30 @@ CodeError AddNewObject(BTree** Node)
     return OK;
 }
 
-CodeError SaveTreeToFile(BTree *Node, FILE *base_file, int depth)
+CodeError SaveTreeToFile(BTree *Node, char *base_buf, int depth, int *cur_len, const size_t buffer_size)
 {
+    assert(base_buf != nullptr);
     if (Node == nullptr) return NODE_NULLPTR;
 
-    for (int i = 0; i < depth; i++)
-        fprintf(base_file, "\t");
-    fprintf(base_file, "{\n");
-
-    for (int i = 0; i < depth + 1; i++)
-        fprintf(base_file, "\t");
+    *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s{\n", depth * 4, "");
 
     if (Node->left && Node->right)
     {
-        fprintf(base_file, "?%s?\n", Node->data);
+        *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s?%s?\n", (depth + 1) * 4, "", Node->data);
 
-        SaveTreeToFile(Node->left, base_file, depth + 1);
+        SaveTreeToFile(Node->left, base_buf, depth + 1, cur_len, buffer_size);
 
-        for (int i = 0; i < depth + 1; i++)
-            fprintf(base_file, "\t");
-        fprintf(base_file, "{\n");
-
-        if (Node->right->left && Node->right->right)
-        {
-            SaveTreeToFile(Node->right, base_file, depth + 2);
-        }
-        else
-        {
-            for (int i = 0; i < depth + 2; i++)
-                fprintf(base_file, "\t");
-            fprintf(base_file, "<%s>\n", Node->right->data);
-        }
-
-        for (int i = 0; i < depth + 1; i++)
-            fprintf(base_file, "\t");
-        fprintf(base_file, "}\n");
+        SaveTreeToFile(Node->right, base_buf, depth + 1, cur_len, buffer_size);
     }
     else
     {
-        fprintf(base_file, "<%s>\n", Node->data);
+        *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s<%s>\n", (depth + 1) * 4, "", Node->data);
     }
 
-    for (int i = 0; i < depth; i++)
-        fprintf(base_file, "\t");
-    fprintf(base_file, "}\n");
+    *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s}\n", depth * 4, "");
 
     return OK;
-} //TODO snprintf
+}
 
 CodeError SaveDatabase(Akinat *akn)
 {
@@ -322,23 +297,36 @@ CodeError SaveDatabase(Akinat *akn)
         return INVALID_ARGUMENT;
     }
 
-    FILE *file = fopen(akn->name_base, "w");
+    const size_t BASE_BUF_SIZE = 2048;
+    char *base_buf = (char*)calloc(BASE_BUF_SIZE, sizeof(char));
+    if (base_buf == nullptr)
+    {
+        LOG(LOGL_ERROR, "base_buf alloc error base buffer");
+        return ALLOC_ERR;
+    }
+
+    int current_len = 0;
+    int depth = 0;
+    CodeError err = SaveTreeToFile(*(akn->Root), base_buf, depth, &current_len, BASE_BUF_SIZE);
+    if (err != OK)
+    {
+        LOG(LOGL_ERROR, "FAILED_TO_SAVE_TREE");
+        free(base_buf);
+        return err;
+    }
+
+    FILE *file = fopen(akn->new_name_base, "w+");
     if (!file)
     {
         LOG(LOGL_ERROR, "FAILED_TO_OPEN_FILE");
         return FILE_NOT_OPEN;
     }
 
-    CodeError err = SaveTreeToFile(*(akn->Root), file, 0);
+    fprintf(file, "%s", base_buf);
     fclose(file);
 
-    if (err != OK)
-    {
-        LOG(LOGL_ERROR, "FAILED_TO_SAVE_TREE");
-        return err;
-    }
-
-    LOG(LOGL_INFO, "Database successfully saved to %s", akn->name_base);
+    free(base_buf);
+    LOG(LOGL_INFO, "Database successfully saved to %s", akn->new_name_base);
     return OK;
 }
 
@@ -677,10 +665,10 @@ CodeError FindDifference(BTree* Node)
         {
             printf(MAGENTA "Difference found:\n" RESET);
             printf(CYAN"- %s is %s%s\n"RESET, word1,
-                   (Node1 == Node1->parent->left) ? "" : "not ",
+                   (Node1 == Node1->parent->left) ? "" : RED "not " CYAN,
                    Node1->parent->data);
             printf(CYAN"- %s is %s%s\n"RESET, word2,
-                   (Node2 == Node2->parent->left) ? "" : "not ",
+                   (Node2 == Node2->parent->left) ? "" : RED "not " CYAN,
                    Node2->parent->data);
             break;
         }
