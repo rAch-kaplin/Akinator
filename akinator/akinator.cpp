@@ -10,6 +10,7 @@
 #include "color.h"
 
 const size_t SIZE_QUESTION = 100;
+#define MAX_SIZE_BUFFER = "99";
 
 bool CheckYesAnswer(char *answer);
 bool CheckNoAnswer(char *answer);
@@ -117,7 +118,7 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
     }
 
     printf(CYAN "It's %s? (yes/no/q - quit/r - restart): " RESET, (*Node)->data);
-    scanf("%99s", answer); //TODO 99s
+    scanf("%" MAX_SIZE_BUFFER "s", answer);
 
     if (strcmp(answer, "q") == 0) //TODO q Q
     {
@@ -161,7 +162,7 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
 
             printf(YELLOW "Do you want to save changes? (yes/no): " RESET);
             char save_answer[MAX_QUESTION] = "";
-            scanf("%149s", save_answer); //TODO
+            scanf("%" MAX_SIZE_BUFFER "s", save_answer);
 
             if (CheckYesAnswer(save_answer))
             {
@@ -206,10 +207,10 @@ CodeError AddNewObject(BTree** Node)
     }
 
     printf(MAGENTA "Who did you guess? " RESET);
-    scanf(" %99[^\n]", new_object);
+    scanf(" %" MAX_SIZE_BUFFER "[^\n]", new_object);
 
     printf(MAGENTA "What's the difference between %s and %s? " RESET, new_object, (*Node)->data);
-    scanf(" %99[^\n]", question);
+    scanf(" %" MAX_SIZE_BUFFER "[^\n]", question);
 
     BTree* NewNodeQuestion = nullptr;
     CodeError err = CreateNode(&NewNodeQuestion, question, (*Node)->parent);
@@ -471,7 +472,7 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 
     LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
     return INVALID_FORMAT;
-} //TODO define for log, debug or not
+}
 
 void PrintDefinition(stack *stk, char *word)
 {
@@ -528,7 +529,7 @@ CodeError DefinitionObject(BTree *Node)
     }
 
     printf(YELLOW "Enter the word, you want define: " RESET);
-    scanf("%99s", word);
+    scanf("%" MAX_SIZE_BUFFER "s", word);
     printf("\n");
 
 
@@ -619,9 +620,9 @@ CodeError FindDifference(BTree* Node)
     }
 
     printf(YELLOW "Enter first word to compare: " RESET);
-    scanf("%99s", word1);
+    scanf("%" MAX_SIZE_BUFFER "s", word1);
     printf(YELLOW "Enter second word to compare: " RESET);
-    scanf("%99s", word2);
+    scanf("%" MAX_SIZE_BUFFER "s", word2);
 
     struct stack stk1 = {}, stk2 = {};
     if (stackCtor(&stk1, 10) != STK_OK || stackCtor(&stk2, 10) != STK_OK)
