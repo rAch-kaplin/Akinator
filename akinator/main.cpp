@@ -24,6 +24,11 @@ int main(int argc, const char* argv[])
 
     BTree *Root = nullptr;
     const char *name_base = options[INPUT].argument;
+    if (name_base == nullptr)
+    {
+        fprintf(stderr, "name_base cant open\n");
+        return 1;
+    }
 
     MenuGuessing(&Root, name_base);
     TreeDumpDot(Root);

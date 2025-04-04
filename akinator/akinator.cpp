@@ -10,10 +10,7 @@
 #include "color.h"
 
 const size_t SIZE_QUESTION = 100;
-#define MAX_SIZE_BUFFER = "99";
-
-bool CheckYesAnswer(char *answer);
-bool CheckNoAnswer(char *answer);
+#define MAX_SIZE_BUFFER "99"
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
 CodeError AddNewObject(BTree** Node);
@@ -25,6 +22,13 @@ CodeError DefinitionObject(BTree *Node);
 CodeError FindDifference(BTree* Node);
 void ReverseStack(struct stack* stk);
 void PrintDefinition(stack *stk, char *word);
+
+CodeError HandleUnsolvedLeaf(BTree **Node, BTree **Root, const char *name_base);
+void HandleAnswer(AnswerType type_answ, const char *name_base, BTree **Node, BTree **Root);
+
+AnswerType CheckAnswer(char *answer);
+
+//TODO make struct for akinator gameplay: files, Nodes ...
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -128,68 +132,85 @@ CodeError Akinator(BTree **Node, const char *name_base, BTree **Root)
     else if (strcmp(answer, "r") == 0)
     {
         free(answer);
-        return OK;
-    } //TODO Root
-
-    //FIXME func, enum
-    if (CheckYesAnswer(answer) && (*Node)->left)
-    {
-        Akinator(&(*Node)->left, name_base, Root);
+        Akinator(Root, name_base, Root);
     }
 
-    else if (CheckNoAnswer(answer) && (*Node)->right)
-    {
-        Akinator(&(*Node)->right, name_base, Root);
-    }
+    AnswerType type_answ = CheckAnswer(answer);
+    free(answer);
 
+    if (type_answ != ANSWER_UNKNOW)
+    {
+        HandleAnswer(type_answ, name_base, Node, Root);
+    }
     else
     {
-        if (CheckYesAnswer(answer))
-        {
-            printf(GREEN "I FIND THE ELEMENT\n" RESET);
-            free(answer);
-            return OK;
-        }
-        else if (CheckNoAnswer(answer))
-        {
-            printf(MAGENTA "I DO NOT FIND, LETS WRITE IT\n" RESET);
-            CodeError err = AddNewObject(Node);
-            if (err != OK)
-            {
-                LOG(LOGL_ERROR, "Failed to add a new object");
-                return err;
-            }
-
-            printf(YELLOW "Do you want to save changes? (yes/no): " RESET);
-            char save_answer[MAX_QUESTION] = "";
-            scanf("%" MAX_SIZE_BUFFER "s", save_answer);
-
-            if (CheckYesAnswer(save_answer))
-            {
-                if (SaveDatabase(name_base, *Root) == OK)
-                    printf(GREEN "Changes saved successfully!\n" RESET);
-                else
-                    printf(RED "Error saving the database!\n" RESET);
-            }
-            else
-            {
-                printf(CYAN "Changes were not saved.\n" RESET);
-            }
-
-            free(answer);
-            return OK;
-        }
-        else
-        {
-            printf(RED "INCORRECT INPUT, PLEASE, TRY AGAIN\n" RESET);
-            free(answer);
-            Akinator(Node, name_base, Root);
-            return INVALID_FORMAT;
-        }
+        printf(RED "INCORRECT INPUT, PLEASE, TRY AGAIN\n" RESET);
+        Akinator(Node, name_base, Root);
     }
 
-    free(answer);
     return OK;
+}
+
+CodeError HandleUnsolvedLeaf(BTree **Node, BTree **Root, const char *name_base)
+{
+    assert(Node != nullptr);
+    assert(Root != nullptr);
+
+    printf(MAGENTA "I DO NOT FIND, LETS WRITE IT\n" RESET);
+    CodeError err = AddNewObject(Node);
+    if (err != OK)
+    {
+        LOG(LOGL_ERROR, "Failed to add a new object");
+        return err;
+    }
+
+    printf(YELLOW "Do you want to save changes? (yes/no): " RESET);
+    char save_answer[MAX_QUESTION] = "";
+    scanf("%" MAX_SIZE_BUFFER "s", save_answer);
+
+    AnswerType type_answ = CheckAnswer(save_answer);
+
+    if (type_answ == ANSWER_YES)
+    {
+        if (SaveDatabase(name_base, *Root) == OK)
+            printf(GREEN "Changes saved successfully!\n" RESET);
+        else
+            printf(RED "Error saving the database!\n" RESET);
+    }
+    else
+    {
+        printf(CYAN "Changes were not saved.\n" RESET);
+    }
+
+    return OK;
+}
+
+void HandleAnswer(AnswerType type_answ, const char *name_base, BTree **Node, BTree **Root)
+{
+    assert(Node != nullptr);
+
+    switch (type_answ)
+    {
+        case ANSWER_YES:
+        {
+            if ((*Node)->left != nullptr) Akinator(&(*Node)->left, name_base, Root);
+            else                          printf(GREEN "I FIND THE ELEMENT\n" RESET);
+
+            break;
+        }
+
+        case ANSWER_NO:
+        {
+            if ((*Node)->right != nullptr) Akinator(&(*Node)->right, name_base, Root);
+            else                           HandleUnsolvedLeaf(Node, Root, name_base);
+
+            break;
+        }
+
+        case ANSWER_UNKNOW:
+        default:
+            break;
+    }
 }
 
 CodeError AddNewObject(BTree** Node)
@@ -320,22 +341,16 @@ CodeError SaveDatabase(const char *filename, BTree *Root)
     return OK;
 }
 
-bool CheckYesAnswer(char *answer)
+AnswerType CheckAnswer(char *answer)
 {
     assert(answer);
-    if (strncmp(answer, "yes", 3) == 0)
-        return true;
-    else
-        return false;
-}
 
-bool CheckNoAnswer(char *answer)
-{
-    assert(answer);
-    if (strncmp(answer, "no", 2) == 0)
-        return true;
+    if (strncmp(answer, "yes", 3) == 0)
+        return ANSWER_YES;
+    else if (strncmp(answer, "no", 2) == 0)
+        return ANSWER_NO;
     else
-        return false;
+        return ANSWER_UNKNOW;
 }
 
 size_t GetBaseSizeFile(FILE *name_base)

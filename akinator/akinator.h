@@ -13,13 +13,20 @@ void MenuGuessing(BTree **Node, const char *name_base);
 
 const size_t MAX_QUESTION = 150;
 
-enum mode
+enum Mode
 {
     key_guessing   = 103,
     key_restart    = 114,
     key_exit       = 113,
     key_definition = 100,
     key_difference =  68,
+};
+
+enum AnswerType
+{
+    ANSWER_UNKNOW = -1,
+    ANSWER_NO      = 0,
+    ANSWER_YES    =  1,
 };
 
 
