@@ -23,6 +23,12 @@ void AkinatorInit(BTree **Node, const char *name_base);
 sf::Text CreateText(const sf::Font &font, const std::string &str, unsigned int size, sf::Color color, sf::Vector2f position);
 void ShowResult(sf::RenderWindow &window, sf::Font &font, const std::string &message, sf::Color color);
 sf::RectangleShape CreateButton(sf::Vector2f size, sf::Color color, sf::Vector2f position);
+CodeError SaveDatabase(BTree **Root);
+CodeError SaveTreeToFile(BTree *Node, char *base_buf, int depth, int *cur_len, const size_t buffer_size);
+CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent);
+CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent);
+CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent);
+
 
 void AkinatorInit(BTree **Node, const char *name_base)
 {
@@ -92,10 +98,66 @@ sf::RectangleShape CreateButton(sf::Vector2f size, sf::Color color, sf::Vector2f
     return button;
 }
 
+char *GetTextInput(sf::RenderWindow *window, sf::Font *font, const char *prompt)
+{
+    assert(window != NULL);
+    assert(font != NULL);
+
+    static char inputBuffer[MAX_QUESTION] = "";
+    memset(inputBuffer, 0, sizeof(inputBuffer));
+    size_t inputLength = 0;
+
+    sf::Text promptText = CreateText(*font, prompt, 24, sf::Color::Black, sf::Vector2f(50, 100));
+    sf::Text inputText  = CreateText(*font, "", 24, sf::Color::Blue, sf::Vector2f(50, 200));
+
+    while (window->isOpen())
+    {
+        sf::Event event;
+        while (window->pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+            {
+                window->close();
+                return NULL;
+            }
+
+            if (event.type == sf::Event::TextEntered)
+            {
+                if (event.text.unicode == '\b')
+                {
+                    if (inputLength > 0)
+                    {
+                        inputLength--;
+                        inputBuffer[inputLength] = '\0';
+                    }
+                }
+                else if (event.text.unicode == '\r')
+                {
+                    return inputBuffer;
+                }
+                else if (inputLength < MAX_QUESTION - 1 &&
+                         event.text.unicode >= 32 && event.text.unicode < 127)
+                {
+                    inputBuffer[inputLength++] = (char)event.text.unicode;
+                    inputBuffer[inputLength] = '\0';
+                }
+                inputText.setString(inputBuffer);
+            }
+        }
+
+        window->clear(sf::Color::White);
+        window->draw(promptText);
+        window->draw(inputText);
+        window->display();
+    }
+
+    return NULL;
+}
 
 void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
 {
     assert(Node != nullptr);
+    BTree **Root = Node;
 
     sf::Text questionText = CreateText(font, "It's " + std::string((*Node)->data) + "?", 30, sf::Color::Black, sf::Vector2f(200, 50));
 
@@ -165,6 +227,46 @@ void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
                     else
                     {
                         ShowResult(window, font, "I don't know what it is :(", sf::Color::Red);
+
+                        const char *new_object = GetTextInput(&window, &font, "What was it?");
+                        if (new_object == NULL) return;
+
+                        char prompt[MAX_QUESTION] = "";
+                        snprintf(prompt, MAX_QUESTION, "What distinguishes %s from %s?", new_object, (*Node)->data);
+
+                        const char *newQuestion = GetTextInput(&window, &font, prompt);
+                        if (newQuestion == NULL) return;
+
+                        CodeError err = OK;
+
+                        BTree *NewNodeQuestion = NULL;
+                        if (CreateNode(&NewNodeQuestion, (char*)newQuestion, (*Node)->parent) != OK)
+                        {
+                            LOG(LOGL_ERROR, "Failed to create old object node");
+                            FreeTree(&NewNodeQuestion);
+                            return;
+                        }
+
+                        BTree *NewNode = NULL;
+                        if (CreateNode(&NewNode, (char*)new_object, NewNodeQuestion) != OK)
+                        {
+                            LOG(LOGL_ERROR, "Failed to create new object node");
+                            FreeTree(&NewNode);
+                            return;
+                        }
+
+                        BTree* OldNode = *Node;
+
+                        *Node = NewNodeQuestion;
+                        NewNodeQuestion->left = NewNode;
+                        NewNodeQuestion->right = OldNode;
+
+                        OldNode->parent = NewNodeQuestion;
+
+                        TreeDumpDot(*Root);
+                        SaveDatabase(Root);
+
+                        ShowResult(window, font, "Thanks! I've learned something new!", sf::Color::Blue);
                     }
                 }
             }
@@ -181,8 +283,6 @@ void ShowResult(sf::RenderWindow &window, sf::Font &font, const std::string &mes
     window.display();
     sf::sleep(sf::seconds(2));
 }
-
-
 
 CodeError CreateTree(BTree **Node, const char *name_base)
 {
@@ -244,6 +344,87 @@ char *ReadBaseToBuffer(const char *name_base, size_t *file_size)
     return buffer;
 }
 
+CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent)
+{
+    (*buffer)++;
+    LOG(LOGL_DEBUG, "Found {");
+
+    while (isspace(**buffer)) (*buffer)++;
+
+    CodeError err = ParseTree(Node, buffer, parent);
+    if (err != OK) {
+        FreeTree(Node);
+        return err;
+    }
+
+    while (isspace(**buffer)) (*buffer)++;
+
+    if (**buffer != '}')
+    {
+        LOG(LOGL_ERROR, "MISSING_CLOSING_BRACE, got '%c'", **buffer);
+        FreeTree(Node);
+        return INVALID_FORMAT;
+    }
+
+    (*buffer)++;
+    LOG(LOGL_DEBUG, "Found }");
+
+    return OK;
+}
+
+
+CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent)
+{
+    (*buffer)++;
+
+    char name[MAX_QUESTION] = "";
+    if (sscanf(*buffer, "%[^>]>", name) != 1)
+    {
+        LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
+        return INVALID_FORMAT;
+    }
+
+    (*buffer) += strlen(name) + 1;
+
+    LOG(LOGL_DEBUG, "Leaf node: %s", name);
+    return CreateNode(Node, name, parent);
+}
+
+
+CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent)
+{
+    (*buffer)++;
+
+    char question[MAX_QUESTION] = "";
+    if (sscanf(*buffer, "%[^?]?", question) != 1)
+    {
+        LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
+        return INVALID_FORMAT;
+    }
+
+    (*buffer) += strlen(question) + 1;
+
+    LOG(LOGL_DEBUG, "Question node: %s", question);
+    CodeError err = CreateNode(Node, question, parent);
+    if (err != OK) return err;
+
+    err = ParseTree(&((*Node)->left), buffer, *Node);
+    if (err != OK)
+    {
+        FreeTree(Node);
+        return err;
+    }
+
+    err = ParseTree(&((*Node)->right), buffer, *Node);
+    if (err != OK)
+    {
+        FreeTree(Node);
+        return err;
+    }
+
+    return OK;
+}
+
 CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 {
     LOG(LOGL_DEBUG, "Start ParseTree");
@@ -261,81 +442,89 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
         return UNEXPECTED_END_OF_INPUT;
     }
 
-    if (**buffer == '{')
+    switch (**buffer)
     {
-        (*buffer)++;
-        LOG(LOGL_DEBUG, "Found {");
+        case '{':
+            return HandleNewNode(Node, buffer, parent);
 
-        while (isspace(**buffer)) (*buffer)++;
+        case '<':
+            return HandleLeafNode(Node, buffer, parent);
 
-        CodeError err = ParseTree(Node, buffer, parent);
-        if (err != OK) {
-            FreeTree(Node);
-            return err;
-        }
+        case '?':
+            return HandleQuestionNode(Node, buffer, parent);
 
-        while (isspace(**buffer)) (*buffer)++;
-
-        if (**buffer != '}')
+        default:
         {
-            LOG(LOGL_ERROR, "MISSING_CLOSING_BRACE");
-            FreeTree(Node);
+            LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
             return INVALID_FORMAT;
         }
-        (*buffer)++;
-        LOG(LOGL_DEBUG, "Found }");
-
-        return OK;
     }
 
-    if (**buffer == '<')
+    return OK;
+}
+
+CodeError SaveTreeToFile(BTree *Node, char *base_buf, int depth, int *cur_len, const size_t buffer_size)
+{
+    assert(base_buf != nullptr);
+    if (Node == nullptr) return NODE_NULLPTR;
+
+    *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s{\n", depth * 4, "");
+
+    if (Node->left && Node->right)
     {
-        (*buffer)++;
+        *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s?%s?\n", (depth + 1) * 4, "", Node->data);
 
-        char name[MAX_QUESTION] = "";
-        if (sscanf(*buffer, "%[^>]>", name) != 1)
-        {
-            LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
-            return INVALID_FORMAT;
-        }
-        (*buffer) += strlen(name) + 1;
+        SaveTreeToFile(Node->left, base_buf, depth + 1, cur_len, buffer_size);
 
-        LOG(LOGL_DEBUG, "Leaf node: %s", name);
-        return CreateNode(Node, name, parent);
+        SaveTreeToFile(Node->right, base_buf, depth + 1, cur_len, buffer_size);
     }
-
-    if (**buffer == '?')
+    else
     {
-        (*buffer)++;
-
-        char question[MAX_QUESTION] = "";
-        if (sscanf(*buffer, "%[^?]?", question) != 1)
-        {
-            LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
-            return INVALID_FORMAT;
-        }
-        (*buffer) += strlen(question) + 1;
-
-        LOG(LOGL_DEBUG, "Question node: %s", question);
-        CodeError err = CreateNode(Node, question, parent);
-        if (err != OK) return err;
-
-        err = ParseTree(&((*Node)->left), buffer, *Node);
-        if (err != OK)
-        {
-            FreeTree(Node);
-            return err;
-        }
-
-        err = ParseTree(&((*Node)->right), buffer, *Node);
-        if (err != OK) {
-            FreeTree(Node);
-            return err;
-        }
-
-        return OK;
+        *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s<%s>\n", (depth + 1) * 4, "", Node->data);
     }
 
-    LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
-    return INVALID_FORMAT;
+    *cur_len += snprintf(base_buf + *cur_len, buffer_size - (size_t)*cur_len, "%*s}\n", depth * 4, "");
+
+    return OK;
+}
+
+CodeError SaveDatabase(BTree **Root)
+{
+    if (Root == nullptr)
+    {
+        LOG(LOGL_ERROR, "INVALID_ARGUMENT");
+        return INVALID_ARGUMENT;
+    }
+
+    const size_t BASE_BUF_SIZE = 2048;
+    char *base_buf = (char*)calloc(BASE_BUF_SIZE, sizeof(char));
+    if (base_buf == nullptr)
+    {
+        LOG(LOGL_ERROR, "base_buf alloc error base buffer");
+        return ALLOC_ERR;
+    }
+
+    int current_len = 0;
+    int depth = 0;
+    CodeError err = SaveTreeToFile(*Root, base_buf, depth, &current_len, BASE_BUF_SIZE);
+    if (err != OK)
+    {
+        LOG(LOGL_ERROR, "FAILED_TO_SAVE_TREE");
+        free(base_buf);
+        return err;
+    }
+
+    FILE *file = fopen("new_base.txt", "w+");
+    if (!file)
+    {
+        LOG(LOGL_ERROR, "FAILED_TO_OPEN_FILE");
+        return FILE_NOT_OPEN;
+    }
+
+    fprintf(file, "%s", base_buf);
+    fclose(file);
+
+    free(base_buf);
+    LOG(LOGL_INFO, "Database successfully saved");
+    return OK;
 }
