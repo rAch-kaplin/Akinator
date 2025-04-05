@@ -593,6 +593,7 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 
 void PrintDefinition(stack *stk, const char *word)
 {
+    //TODO new add func stack API
     stackElem popped_elem_w = 0;
     BTree* current_node = nullptr;
     BTree* child_node = nullptr;
@@ -725,8 +726,10 @@ void ReverseStack(stack* stk)
 
 CodeError FindDifference(BTree* Node)
 {
+    //TODO common
     assert(Node);
 
+    //FIXME
     char* word1 = (char*)calloc(SIZE_QUESTION, sizeof(char));
     char* word2 = (char*)calloc(SIZE_QUESTION, sizeof(char));
     if (!word1 || !word2)
@@ -741,12 +744,13 @@ CodeError FindDifference(BTree* Node)
     printf(YELLOW "Enter second word to compare: " RESET);
     scanf("%" MAX_SIZE_BUFFER "s", word2);
 
+    //TODO 10
     struct stack stk1 = {}, stk2 = {};
     if (stackCtor(&stk1, 10) != STK_OK || stackCtor(&stk2, 10) != STK_OK)
     {
         free(word1);
         free(word2);
-        return ANOTHER_ERR;
+        return ANOTHER_ERR; //FIXME
     }
 
     if (!FindWordNode(&stk1, Node, word1) || !FindWordNode(&stk2, Node, word2))

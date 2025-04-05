@@ -56,7 +56,13 @@
                 <boy>
             }
             {
-                <STUDENT>
+                ?fdgdfgddfgsdfg?
+                {
+                    <sdfasdf>
+                }
+                {
+                    <STUDENT>
+                }
             }
         }
     }
