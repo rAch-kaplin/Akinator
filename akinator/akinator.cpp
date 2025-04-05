@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "tree.h"
 #include "akinator.h"
@@ -33,6 +34,7 @@ AnswerType CheckAnswer(const char *answer);
 int GetMode();
 bool FindWordNode(stack *stk, BTree *Node, const char *word);
 void ReverseStack(struct stack* stk);
+void ProcessingAnswerUnknow(BTree **Node, Akinat *akn);
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -82,7 +84,7 @@ void ProcessingModeGame(BTree **Node, const char *name_base)
     int mode_game = GetMode();
 
     BTree **Root = Node;
-    Akinat akn = {Node, name_base, "akinator/new_base.txt"};
+    Akinat akn = {Node, name_base, "akinator/new_base.txt", {}};
 
     switch (mode_game)
     {
@@ -143,7 +145,7 @@ CodeError Akinator(BTree **Node, Akinat *akn)
     AnswerType type_answ = CheckAnswer(answer);
     free(answer);
 
-    if (type_answ != ANSWER_UNKNOW)
+    if (type_answ != UNKNOW)
     {
         HandleAnswer(Node, type_answ, akn);
     }
@@ -189,7 +191,32 @@ CodeError HandleUnsolvedLeaf(BTree **Node, Akinat *akn)
 
     return OK;
 }
+#if 1
+void ProcessingAnswerUnknow(BTree **Node, Akinat *akn)
+{
+    assert(Node != nullptr);
+    assert(akn != nullptr);
 
+    int rand_choice = rand() % 2;
+    AnswerType type_answ = UNKNOW;
+
+    if (rand_choice % 2 == 0) type_answ = ANSWER_YES;
+    else                      type_answ = ANSWER_NO;
+
+    stackPush(&(akn->stk), (stackElem)*Node);
+    stackPush(&(akn->stk), type_answ);
+
+    if (type_answ == ANSWER_YES)
+    {
+        Akinator(&(*Node)->left, akn);
+    }
+
+    else if (type_answ == ANSWER_NO)
+    {
+        Akinator(&(*Node)->right, akn);
+    }
+}
+#endif
 void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
 {
     assert(Node != nullptr);
@@ -206,13 +233,55 @@ void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
 
         case ANSWER_NO:
         {
-            if ((*Node)->right != nullptr) Akinator(&(*Node)->right, akn);
-            else                           HandleUnsolvedLeaf(Node, akn);
+            if ((*Node)->right != nullptr)
+            {
+                Akinator(&(*Node)->right, akn);
+                break;
+            }
+
+            if (akn->stk.size != 0 && (*Node)->right == nullptr)
+            {
+                stackElem popped_elem = 0;
+                stackElem subtree = 0;
+                BTree* node = nullptr;
+
+                stackPop(&(akn->stk), &subtree);
+                stackPop(&(akn->stk), &popped_elem);
+                node = (BTree*)popped_elem;
+                assert(node != nullptr);
+                //printf(MAGENTA "<%p>\n" RESET, node);
+                if (subtree == ANSWER_YES)
+                    Akinator(&(node)->right, akn);
+                else if (subtree == ANSWER_NO)
+                    Akinator(&(node)->left, akn);
+
+                break;
+            }
+
+            HandleUnsolvedLeaf(Node, akn);
 
             break;
         }
 
         case ANSWER_UNKNOW:
+        {
+            if ((*Node)->right != nullptr || (*Node)->left != nullptr)
+            {
+                const size_t stack_size_default = 10;
+                errorCode err = stackCtor(&(akn->stk), stack_size_default);
+                if (err != STK_OK)
+                {
+                    LOG(LOGL_ERROR, "StackCtor error");
+                    return;
+                }
+
+                ProcessingAnswerUnknow(Node, akn);
+                stackDtor(&(akn->stk));
+            }
+            break;
+        }
+
+        case UNKNOW:
         default:
             break;
     }
@@ -340,12 +409,25 @@ AnswerType CheckAnswer(const char *answer)
 {
     assert(answer);
 
-    if (strncmp(answer, "yes", 3) == 0)
+    char lower_answer[MAX_QUESTION] = "";
+    size_t i = 0;
+    for (i = 0; answer[i] != '\0' && i < MAX_QUESTION - 1; i++)
+    {
+        lower_answer[i] = (char)tolower((unsigned char)answer[i]);
+    }
+    lower_answer[i] = '\0';
+
+    if (strncmp(lower_answer, "yes", 3) == 0)
         return ANSWER_YES;
-    else if (strncmp(answer, "no", 2) == 0)
+
+    else if (strncmp(lower_answer, "no", 2) == 0)
         return ANSWER_NO;
-    else
+
+    else if (strncmp(lower_answer, "unknow", 6) == 0)
         return ANSWER_UNKNOW;
+
+    else
+        return UNKNOW;
 }
 
 size_t GetBaseSizeFile(FILE *name_base)
@@ -390,13 +472,13 @@ char *ReadBaseToBuffer(const char *name_base, size_t *file_size)
 
 CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent)
 {
+    (*buffer)++;
     LOG(LOGL_DEBUG, "Found {");
 
     while (isspace(**buffer)) (*buffer)++;
 
     CodeError err = ParseTree(Node, buffer, parent);
-    if (err != OK)
-    {
+    if (err != OK) {
         FreeTree(Node);
         return err;
     }
@@ -405,15 +487,17 @@ CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent)
 
     if (**buffer != '}')
     {
-        LOG(LOGL_ERROR, "MISSING_CLOSING_BRACE");
+        LOG(LOGL_ERROR, "MISSING_CLOSING_BRACE, got '%c'", **buffer);
         FreeTree(Node);
         return INVALID_FORMAT;
     }
+
     (*buffer)++;
     LOG(LOGL_DEBUG, "Found }");
 
     return OK;
 }
+
 
 CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent)
 {
@@ -425,11 +509,13 @@ CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent)
         LOG(LOGL_ERROR, "INVALID_LEAF_FORMAT");
         return INVALID_FORMAT;
     }
+
     (*buffer) += strlen(name) + 1;
 
     LOG(LOGL_DEBUG, "Leaf node: %s", name);
     return CreateNode(Node, name, parent);
 }
+
 
 CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent)
 {
@@ -441,6 +527,7 @@ CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent)
         LOG(LOGL_ERROR, "INVALID_QUESTION_FORMAT");
         return INVALID_FORMAT;
     }
+
     (*buffer) += strlen(question) + 1;
 
     LOG(LOGL_DEBUG, "Question node: %s", question);
@@ -464,7 +551,6 @@ CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent)
     return OK;
 }
 
-
 CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 {
     LOG(LOGL_DEBUG, "Start ParseTree");
@@ -482,21 +568,17 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
         return UNEXPECTED_END_OF_INPUT;
     }
 
-    CodeError err = OK;
-
     switch (**buffer)
     {
         case '{':
-            err = HandleNewNode(Node, buffer, parent);
-            break;
+            return HandleNewNode(Node, buffer, parent);
 
         case '<':
-            err = HandleLeafNode(Node, buffer, parent);
-            break;
+            return HandleLeafNode(Node, buffer, parent);
 
         case '?':
-            err = HandleQuestionNode(Node, buffer, parent);
-            break;
+            return HandleQuestionNode(Node, buffer, parent);
+
         default:
         {
             LOG(LOGL_ERROR, "UNKNOWN_SYMBOL: %c", **buffer);
