@@ -18,7 +18,7 @@ bool CheckNoAnswer(char *answer);
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
 
-void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node);
+void RunGuessingMode(sf::RenderWindow& window, sf::Font& font, BTree** Node, BTree **Root);
 void AkinatorInit(BTree **Node, const char *name_base);
 sf::Text CreateText(const sf::Font &font, const std::string &str, unsigned int size, sf::Color color, sf::Vector2f position);
 void ShowResult(sf::RenderWindow &window, sf::Font &font, const std::string &message, sf::Color color);
@@ -26,14 +26,16 @@ sf::RectangleShape CreateButton(sf::Vector2f size, sf::Color color, sf::Vector2f
 CodeError SaveDatabase(BTree **Root);
 CodeError SaveTreeToFile(BTree *Node, char *base_buf, int depth, int *cur_len, const size_t buffer_size);
 CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent);
+CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent);
 CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent);
-CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent);
-
+char *GetTextInput(sf::RenderWindow *window, sf::Font *font, const char *prompt);
 
 void AkinatorInit(BTree **Node, const char *name_base)
 {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Akinator");
     window.setPosition(sf::Vector2i(600, 50));
+
+    BTree **Root = Node;
 
     sf::Font font;
     if (!font.loadFromFile("font.ttf"))
@@ -63,7 +65,7 @@ void AkinatorInit(BTree **Node, const char *name_base)
                 {
                     if (CreateTree(Node, name_base) == OK)
                     {
-                        RunGuessingMode(window, font, Node);
+                        RunGuessingMode(window, font, Node, Root);
                     }
                 }
                 else if (event.key.code == sf::Keyboard::Q)
@@ -154,10 +156,9 @@ char *GetTextInput(sf::RenderWindow *window, sf::Font *font, const char *prompt)
     return NULL;
 }
 
-void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
+void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node, BTree **Root)
 {
     assert(Node != nullptr);
-    BTree **Root = Node;
 
     sf::Text questionText = CreateText(font, "It's " + std::string((*Node)->data) + "?", 30, sf::Color::Black, sf::Vector2f(200, 50));
 
@@ -210,7 +211,7 @@ void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
                     answered = true;
                     if ((*Node)->left)
                     {
-                        RunGuessingMode(window, font, &(*Node)->left);
+                        RunGuessingMode(window, font, &(*Node)->left, Root);
                     }
                     else
                     {
@@ -222,36 +223,61 @@ void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
                     answered = true;
                     if ((*Node)->right)
                     {
-                        RunGuessingMode(window, font, &(*Node)->right);
+                        RunGuessingMode(window, font, &(*Node)->right, Root);
                     }
                     else
                     {
                         ShowResult(window, font, "I don't know what it is :(", sf::Color::Red);
 
-                        const char *new_object = GetTextInput(&window, &font, "What was it?");
-                        if (new_object == NULL) return;
+                        #if 1
+                        char *new_object_input = GetTextInput(&window, &font, "What was it?");
+                        if (new_object_input == NULL)
+                        {
+                            LOG(LOGL_ERROR, "new_object error read");
+                            return;
+                        }
+
+                        char *new_object = strdup(new_object_input);
+                        if (new_object == NULL)
+                        {
+                            LOG(LOGL_ERROR, "strdup failed");
+                            return;
+                        }
 
                         char prompt[MAX_QUESTION] = "";
                         snprintf(prompt, MAX_QUESTION, "What distinguishes %s from %s?", new_object, (*Node)->data);
 
-                        const char *newQuestion = GetTextInput(&window, &font, prompt);
-                        if (newQuestion == NULL) return;
-
-                        CodeError err = OK;
-
-                        BTree *NewNodeQuestion = NULL;
-                        if (CreateNode(&NewNodeQuestion, (char*)newQuestion, (*Node)->parent) != OK)
+                        char *newQuestion_input = GetTextInput(&window, &font, prompt);
+                        if (newQuestion_input == NULL)
                         {
-                            LOG(LOGL_ERROR, "Failed to create old object node");
-                            FreeTree(&NewNodeQuestion);
+                            LOG(LOGL_ERROR, "newQuestion error read");
+                            free(new_object);
                             return;
                         }
 
-                        BTree *NewNode = NULL;
-                        if (CreateNode(&NewNode, (char*)new_object, NewNodeQuestion) != OK)
+                        char *newQuestion = strdup(newQuestion_input);
+                        if (newQuestion == NULL)
+                        {
+                            LOG(LOGL_ERROR, "strdup failed");
+                            free(new_object);
+                            return;
+                        }
+
+                        //printf(CYAN "%s-%s\n" RESET, new_object, newQuestion);
+
+                        BTree *NewNodeQuestion = nullptr;
+                        if (CreateNode(&NewNodeQuestion, newQuestion, (*Node)->parent) != OK)
+                        {
+                            LOG(LOGL_ERROR, "Failed to create old object node");
+
+                            return;
+                        }
+
+                        BTree *NewNode = nullptr;
+                        if (CreateNode(&NewNode, new_object, NewNodeQuestion) != OK)
                         {
                             LOG(LOGL_ERROR, "Failed to create new object node");
-                            FreeTree(&NewNode);
+
                             return;
                         }
 
@@ -263,10 +289,15 @@ void RunGuessingMode(sf::RenderWindow &window, sf::Font &font, BTree **Node)
 
                         OldNode->parent = NewNodeQuestion;
 
+                        printf("<%p>\n", *Root);
                         TreeDumpDot(*Root);
                         SaveDatabase(Root);
 
+                        free(new_object);
+                        free(newQuestion);
+
                         ShowResult(window, font, "Thanks! I've learned something new!", sf::Color::Blue);
+                        #endif
                     }
                 }
             }
@@ -514,7 +545,7 @@ CodeError SaveDatabase(BTree **Root)
         return err;
     }
 
-    FILE *file = fopen("new_base.txt", "w+");
+    FILE *file = fopen("base.txt", "w+");
     if (!file)
     {
         LOG(LOGL_ERROR, "FAILED_TO_OPEN_FILE");

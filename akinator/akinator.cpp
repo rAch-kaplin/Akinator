@@ -30,7 +30,7 @@ CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent);
 CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent);
 CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent);
 char *ReadBaseToBuffer(const char *name_base, size_t *file_size);
-AnswerType CheckAnswer(const char *answer);
+AnswerType CheckAnswer(char *answer);
 int GetMode();
 bool FindWordNode(stack *stk, BTree *Node, const char *word);
 void ReverseStack(struct stack* stk);
@@ -197,7 +197,8 @@ void ProcessingAnswerUnknow(BTree **Node, Akinat *akn)
     assert(Node != nullptr);
     assert(akn != nullptr);
 
-    int rand_choice = rand() % 2;
+    int rand_choice = rand();
+    //printf("<%d>\n", rand_choice);
     AnswerType type_answ = UNKNOW;
 
     if (rand_choice % 2 == 0) type_answ = ANSWER_YES;
@@ -217,6 +218,7 @@ void ProcessingAnswerUnknow(BTree **Node, Akinat *akn)
     }
 }
 #endif
+
 void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
 {
     assert(Node != nullptr);
@@ -405,7 +407,7 @@ CodeError SaveDatabase(Akinat *akn)
     return OK;
 }
 
-AnswerType CheckAnswer(const char *answer)
+AnswerType CheckAnswer(char *answer)
 {
     assert(answer);
 
