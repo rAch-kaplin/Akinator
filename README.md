@@ -94,6 +94,14 @@ An example of how it will look like in a binary tree:
 
 <img src="img/dump_0.png" alt="Example Tree">
 
+### 📂 Adding New Objects to the Database
+
+To add a new object to the database:
+
+1. Run the game and select the `Add` button when the game fails to guess the character.
+2. The program will ask you to specify a new question and associate it with a possible object.
+3. The new object will be saved in the database.
+
 
 
 🛠️ **Building and Running the GUI Version**
