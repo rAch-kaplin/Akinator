@@ -59,8 +59,8 @@ In the console version, you can answer the questions with the following options:
 | ❌ `No`       | Answer "No" to the current question or guess     |
 | 🤷‍♂️ `Unknown`  | Answer "I don't know" or "Not sure"              |
 
-[!NOTE]
-New database is saved to the file `akinator/new_base.txt`. You can specify your own file by using the `-o` flag when running the program.
+> [!NOTE]
+> New database is saved to the file `akinator/new_base.txt`. You can specify your own file by using the `-o` flag when running the program.
 
 
 
