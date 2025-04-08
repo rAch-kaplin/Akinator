@@ -104,7 +104,7 @@ To add a new object to the database:
 
 
 
-🛠️ **Building and Running the GUI Version**
+## 🛠️ **Building and Running the GUI Version**
 
 To build and launch the GUI version of the Akinator, run the following commands in your terminal:
 
@@ -114,7 +114,7 @@ make
 ./do
 ```
 
-🛠️ **Building and Running the Console Version**
+## 🛠️ **Building and Running the Console Version**
 
 To build and launch the console version of Akinator, simply run the following command:
 
