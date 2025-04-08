@@ -7,6 +7,7 @@
 
 ParseError ParseArguments(int argc, const char* argv[], ArgOption options[], size_t options_count)
 {
+    //TODO processing func
     for (int i = 1; i < argc; i++)
     {
         bool option_found = false;

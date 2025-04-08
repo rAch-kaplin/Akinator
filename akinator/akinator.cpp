@@ -12,6 +12,7 @@
 
 const size_t SIZE_QUESTION = 100;
 #define MAX_SIZE_BUFFER "99"
+ const size_t stack_size_default = 10;
 
 void ProcessingModeGame(BTree **Node, const char *name_base);
 CodeError Akinator(BTree **Node, Akinat *akn);
@@ -35,6 +36,11 @@ int GetMode();
 bool FindWordNode(stack *stk, BTree *Node, const char *word);
 void ReverseStack(struct stack* stk);
 void ProcessingAnswerUnknow(BTree **Node, Akinat *akn);
+
+/**
+ * # Akinator (c) rAch, 2025
+
+*/
 
 void MenuGuessing(BTree **Node, const char *name_base)
 {
@@ -131,7 +137,7 @@ CodeError Akinator(BTree **Node, Akinat *akn)
     printf(CYAN "It's %s? (yes/no/q - quit/r - restart): " RESET, (*Node)->data);
     scanf("%" MAX_SIZE_BUFFER "s", answer);
 
-    if (strcmp(answer, "q") == 0) //TODO q Q
+    if (strcmp(answer, "q") == 0)
     {
         free(answer);
         return OK;
@@ -201,8 +207,8 @@ void ProcessingAnswerUnknow(BTree **Node, Akinat *akn)
     //printf("<%d>\n", rand_choice);
     AnswerType type_answ = UNKNOW;
 
-    if (rand_choice % 2 == 0) type_answ = ANSWER_YES;
-    else                      type_answ = ANSWER_NO;
+    type_answ = (rand_choice % 2 == 0)
+        ? ANSWER_YES : ANSWER_NO;
 
     stackPush(&(akn->stk), (stackElem)*Node);
     stackPush(&(akn->stk), type_answ);
@@ -218,10 +224,12 @@ void ProcessingAnswerUnknow(BTree **Node, Akinat *akn)
     }
 }
 #endif
-
+//FIXME Node ---> node
 void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
 {
     assert(Node != nullptr);
+
+    //int limited_guess = rand() % 4;
 
     switch (type_answ)
     {
@@ -269,7 +277,6 @@ void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
         {
             if ((*Node)->right != nullptr || (*Node)->left != nullptr)
             {
-                const size_t stack_size_default = 10;
                 errorCode err = stackCtor(&(akn->stk), stack_size_default);
                 if (err != STK_OK)
                 {
@@ -279,7 +286,7 @@ void HandleAnswer(BTree **Node, AnswerType type_answ, Akinat *akn)
 
                 ProcessingAnswerUnknow(Node, akn);
                 stackDtor(&(akn->stk));
-            }
+            } //TODO make limiter
             break;
         }
 
@@ -593,7 +600,7 @@ CodeError ParseTree(BTree **Node, char **buffer, BTree *parent)
 
 void PrintDefinition(stack *stk, const char *word)
 {
-    //TODO new add func stack API
+    //TODO add new func stack API
     stackElem popped_elem_w = 0;
     BTree* current_node = nullptr;
     BTree* child_node = nullptr;
@@ -630,7 +637,6 @@ CodeError DefinitionObject(BTree *Node)
     assert(Node);
 
     struct stack stk = {};
-    const size_t stack_size_default = 10;
     errorCode err = stackCtor(&stk, stack_size_default);
     if (err != STK_OK)
     {
@@ -718,7 +724,6 @@ void ReverseStack(stack* stk)
 
     *stk = temp_stk;
     temp_stk.data = nullptr; //destroy stack
-    //FIXME
 
     stackDtor(&temp_stk);
     LOG(LOGL_INFO, "End reverse stack");
@@ -729,35 +734,24 @@ CodeError FindDifference(BTree* Node)
     //TODO common
     assert(Node);
 
-    //FIXME
-    char* word1 = (char*)calloc(SIZE_QUESTION, sizeof(char));
-    char* word2 = (char*)calloc(SIZE_QUESTION, sizeof(char));
-    if (!word1 || !word2)
-    {
-        free(word1);
-        free(word2);
-        return ALLOC_ERR;
-    }
+    char word1[SIZE_QUESTION] = "";
+    char word2[SIZE_QUESTION] = "";
 
     printf(YELLOW "Enter first word to compare: " RESET);
     scanf("%" MAX_SIZE_BUFFER "s", word1);
     printf(YELLOW "Enter second word to compare: " RESET);
     scanf("%" MAX_SIZE_BUFFER "s", word2);
 
-    //TODO 10
     struct stack stk1 = {}, stk2 = {};
-    if (stackCtor(&stk1, 10) != STK_OK || stackCtor(&stk2, 10) != STK_OK)
+    if (stackCtor(&stk1, stack_size_default) != STK_OK ||
+        stackCtor(&stk2, stack_size_default) != STK_OK)
     {
-        free(word1);
-        free(word2);
         return ANOTHER_ERR; //FIXME
     }
 
     if (!FindWordNode(&stk1, Node, word1) || !FindWordNode(&stk2, Node, word2))
     {
         printf(RED "One or both words not found in the tree.\n" RESET);
-        free(word1);
-        free(word2);
         stackDtor(&stk1);
         stackDtor(&stk2);
         return NODE_NULLPTR;
@@ -789,11 +783,8 @@ CodeError FindDifference(BTree* Node)
                    Node2->parent->data);
             break;
         }
-
     }
 
-    free(word1);
-    free(word2);
     stackDtor(&stk1);
     stackDtor(&stk2);
     return OK;

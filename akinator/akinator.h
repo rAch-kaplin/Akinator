@@ -10,7 +10,7 @@ typedef struct
     const char *name_base;
     const char *new_name_base;
     struct stack stk;
-} Akinat;
+} Akinat; //FIXME Akinator
 
 void MenuGuessing(BTree **Node, const char *name_base);
 

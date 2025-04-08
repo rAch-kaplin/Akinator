@@ -135,7 +135,7 @@ char *GetTextInput(sf::RenderWindow *window, sf::Font *font, const char *prompt)
                 }
                 else if (event.text.unicode == '\r')
                 {
-                    return inputBuffer;
+                    return inputBuffer; //FIXME
                 }
                 else if (inputLength < MAX_QUESTION - 1 &&
                          event.text.unicode >= 32 && event.text.unicode < 127)
@@ -334,7 +334,6 @@ CodeError CreateTree(BTree **Node, const char *name_base)
     return OK;
 }
 
-
 size_t GetBaseSizeFile(FILE *name_base)
 {
     fseek(name_base, 0, SEEK_END);
@@ -403,7 +402,6 @@ CodeError HandleNewNode(BTree **Node, char **buffer, BTree *parent)
     return OK;
 }
 
-
 CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent)
 {
     (*buffer)++;
@@ -420,7 +418,6 @@ CodeError HandleLeafNode(BTree **Node, char **buffer, BTree *parent)
     LOG(LOGL_DEBUG, "Leaf node: %s", name);
     return CreateNode(Node, name, parent);
 }
-
 
 CodeError HandleQuestionNode(BTree **Node, char **buffer, BTree *parent)
 {
