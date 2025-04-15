@@ -74,7 +74,7 @@ The **Akinator database** is stored in a text format, where each entry represent
 Here's an example of a database entry:
 
 ```
-PHISICS?
+?PHISICS?
 {
     ?LABS?
     {
