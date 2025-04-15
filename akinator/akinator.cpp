@@ -37,11 +37,14 @@ bool FindWordNode(stack *stk, BTree *Node, const char *word);
 void ReverseStack(struct stack* stk);
 void ProcessingAnswerUnknow(BTree **Node, Akinat *akn);
 
-/**
- * # Akinator (c) rAch, 2025
 
-*/
-
+ /**
+  * @brief Краткое описание функции.
+  * @param a Первый аргумент.
+  * @param b Второй аргумент.
+  * @return Результат вычисления.
+  */
+  
 void MenuGuessing(BTree **Node, const char *name_base)
 {
     system("clear");

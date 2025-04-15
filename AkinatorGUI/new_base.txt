@@ -1,63 +1,13 @@
+?PHISICS?
 {
-    ?ANIMAL?
+    ?LABS?
     {
-        ?CULTURAL?
-        {
-            ?leave copeyka?
-            {
-                <POLTORASHKA>
-            }
-            {
-                <pushok>
-            }
-        }
-        {
-            ?live in space?
-            {
-                <fact>
-            }
-            {
-                <FOPF>
-            }
-        }
+        <DRAKON>
     }
     {
-        ?TEACHES?
-        {
-            ?MATH?
-            {
-                ?cool?
-                {
-                    <zhestkov>
-                }
-                {
-                    ?legenda?
-                    {
-                        <skubach>
-                    }
-                    {
-                        <ZNAMENSKAY>
-                    }
-                }
-            }
-            {
-                ?PHYSICS?
-                {
-                    ?LABS?
-                    {
-                        <DRAKON>
-                    }
-                    {
-                        <OVCHOS>
-                    }
-                }
-                {
-                    <DED>
-                }
-            }
-        }
-        {
-            <STUDENT>
-        }
+        <OVCHOS>
     }
+}
+{
+    <DED>
 }

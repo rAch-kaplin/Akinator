@@ -55,16 +55,16 @@ int GenerateGraph(BTree *Node, char* buffer, int* buffer_len, const size_t BUFFE
 
     *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
                             "\tnode%p [shape=plaintext; style=filled; color=\"#fcf0d2\"; label = <\n"
-                            "\t\t         <table BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"6\" BGCOLOR=\"#bfb58f\" COLOR=\"#4d3d03\">\n"
-                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3a3a3a'><b>Node: %p</b></FONT></td></tr>\n"
-                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#ba6504'>Data: <b>"FORMAT_ELEM"</b></FONT></td></tr>\n"
-                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3a3a3a'><b>Parent: %p</b></FONT></td></tr>\n"
-                            "\t\t\t           <tr>\n"
-                            "\t\t\t               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: %p</b></FONT></td>\n"
-                            "\t\t\t               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#8b0000'><b>Right: %p</b></FONT></td>\n"
-                            "\t\t\t           </tr>\n"
+                            "\t\t         <table BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"16\" BGCOLOR=\"#bfb58f\" COLOR=\"#4d3d03\">\n"
+                            // "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3a3a3a'><b>Node: %p</b></FONT></td></tr>\n"
+                            "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#ba6504'>"/*Data:*/" <b>"FORMAT_ELEM"</b></FONT></td></tr>\n"
+                            // "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3a3a3a'><b>Parent: %p</b></FONT></td></tr>\n"
+                            // "\t\t\t           <tr>\n"
+                            // "\t\t\t               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: %p</b></FONT></td>\n"
+                            // "\t\t\t               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#8b0000'><b>Right: %p</b></FONT></td>\n"
+                            // "\t\t\t           </tr>\n"
                             "\t\t         </table> >];\n",
-                            Node, Node, Node->data, Node->parent, Node->left, Node->right);
+                            /*Node,*/ Node, Node->data/*, Node->parent, Node->left, Node->right*/);
 
 
     if (Node->left)
